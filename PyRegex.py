@@ -1,4 +1,5 @@
 match_pool = []
+string = 'abexabbcsagvbafabcec'
 
 
 # FA for 'abc'
@@ -64,12 +65,48 @@ def gen_a_b_c(entry: int):
     yield 'fail'
 
 
+# FA for 'ab+c' == 'abb*c'
+def gen_a__b__c(op: int):
+    ed = op
+
+    # a
+    in_char = yield
+    if in_char == 'a':
+        ed += 1
+    else:
+        yield 'fail'
+
+    # b+ == bb*
+    # b
+    in_char = yield
+    if in_char == 'b':
+        ed += 1
+    else:
+        yield 'fail'
+
+    # b*
+    while True:
+        in_char = yield
+        if in_char == 'b':
+            ed += 1
+        else:
+            break
+
+    # c
+    if in_char == 'c':
+        ed += 1
+    else:
+        yield 'fail'
+
+    print('accept', op, ed, string[op:ed])
+    yield 'accept'
+
+
 if __name__ == '__main__':
-    string = 'abexabcsagvbafbec'
     _gen_abc = make_gen('abc')
     for i, char in enumerate(string):
         new_pool = []
-        gen = gen_a_b_c(i)
+        gen = gen_a__b__c(i)
         next(gen)
         match_pool.append(gen)
         for nfa in match_pool:

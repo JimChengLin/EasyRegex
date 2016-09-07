@@ -1,4 +1,5 @@
 from collections import namedtuple
+from itertools import chain
 
 
 class DONE:
@@ -33,7 +34,7 @@ def match(input_str: str):
     global fa_l
     for i, char in enumerate(input_str):
         new_fa_l = []
-        for seed in seed_l:
+        for seed in chain(seed_l, delay_l):
             new_fa = seed(i)
             next(new_fa)
             fa_l.append(new_fa)
@@ -46,7 +47,12 @@ def match(input_str: str):
 
 
 if __name__ == '__main__':
-    if True:
+    if False:
         seed_l.append(make_chars_fa('abc'))
         match('abexabcsagvbafbecabc')
         print(result_l)
+
+
+class M:
+    def __init__(self):
+        pass
