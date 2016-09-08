@@ -1,5 +1,4 @@
 from collections import namedtuple
-from itertools import chain
 
 
 class DONE:
@@ -34,10 +33,12 @@ def match(input_str: str):
     global fa_l
     for i, char in enumerate(input_str):
         new_fa_l = []
-        for seed in chain(seed_l, delay_l):
+        for seed in seed_l:
             new_fa = seed(i)
             next(new_fa)
             fa_l.append(new_fa)
+        fa_l.extend(delay_l)
+        delay_l.clear()
 
         for fa in fa_l:
             echo = fa.send(char)
@@ -54,5 +55,11 @@ if __name__ == '__main__':
 
 
 class M:
-    def __init__(self):
+    counter = 0
+
+    def __init__(self, target: str):
+        self.token = M.counter
+        M.counter += 1
+
+    def compile(self):
         pass
