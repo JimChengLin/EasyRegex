@@ -1,22 +1,21 @@
 class M:
     def __init__(self, target: str):
         self.target = target
-        self.head = self
-        self.tail = self
+        self.cursor = self
         self.child = None
         self.sibling_l = []
 
     def __str__(self):
-        self_s = self.target
         if self.sibling_l:
-            self_s = '({}|{})'.format(self.target, '|'.join(str(i) for i in self.sibling_l))
-        return '{}{}'.format(self_s, self.child if self.child else '')
+            this_s = '({}|{})'.format(self.target, '|'.join(str(i) for i in self.sibling_l))
+        else:
+            this_s = self.target
+        return '{}{}'.format(this_s, self.child or '')
 
     def __add__(self, other: 'M'):
         assert isinstance(other, M) and self.child is None
-        self.tail.child = other
-        self.tail = other
-        other.head = self.head
+        self.cursor.child = other
+        self.cursor = other
         return self
 
     def __or__(self, other: 'M'):
@@ -28,7 +27,7 @@ class M:
 if __name__ == '__main__':
     def test():
         matcher = (M('abc') | M('cfg')) + M('iop')
-        print(matcher.head)
+        print(matcher)
 
 
     test()
