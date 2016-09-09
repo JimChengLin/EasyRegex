@@ -55,11 +55,6 @@ if __name__ == '__main__':
 
 
 class M:
-    counter = 0
-
-    def __init__(self, target: str):
-        self.token = M.counter
-        M.counter += 1
-
-    def compile(self):
-        pass
+    def __init__(self):
+        self.sibling = []
+        self.child = None
