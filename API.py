@@ -1,45 +1,45 @@
-class M:
-    def __init__(self, target_rule):
+class R:
+    def __init__(self, target_rule, num=None, at=None):
         self.target_rule = target_rule
-        self.child = None
+        self.num = num
+        self.next_r = None
         self.sibling_l = []
 
     @property
     def is_matcher(self):
         return isinstance(self.target_rule, str)
 
-    @property
-    def is_wrapper(self):
-        return isinstance(self.target_rule, M)
+    def __and__(self, other: 'R'):
+        self.next_r = other
+        return R(self)
 
-    def __str__(self):
-        if self.sibling_l:
-            this_s = '({}|{})'.format(self.target, '|'.join(str(i) for i in self.sibling_l))
-        else:
-            this_s = self.target
-        return '{}{}'.format(this_s, self.child or '')
-
-    def __add__(self, other: 'M'):
-        assert isinstance(other, M) and self.child is None
-        self.cursor.child = other
-        self.cursor = other
-        return self
-
-    def __or__(self, other: 'M'):
-        assert isinstance(other, M)
+    def __or__(self, other: 'R'):
         self.sibling_l.append(other)
         return self
 
-    def __sub__(self, other):
-        pass
-
-    def n(self, n):  # number
-        pass
+    def __str__(self):
+        did_group = False
+        s = str(self.target_rule)
+        if s.startswith('(') and s.endswith(')'):
+            did_group = True
+        if self.sibling_l:
+            s += '|'
+            s += '|'.join(str(i) for i in self.sibling_l)
+            s = '(' + s + ')'
+            did_group = True
+        if self.num is not None:
+            if not did_group:
+                s = '(' + s + ')'
+            s += str(self.num)
+        if self.next_r is not None:
+            s += str(self.next_r)
+        return s
 
 
 if __name__ == '__main__':
     def test():
-        matcher = (M('abc') | M('cfg')) + M('iop')
+        _ = R
+        matcher = _(_('abc') | _('cfg'), '*', '@game') & _('iop')
         print(matcher)
 
 
