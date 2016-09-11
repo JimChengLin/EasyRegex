@@ -4,34 +4,36 @@ class R:
         self.num = num
         self.name = name
 
-        self.next_rule = None
         self.sibling_l = []
+        self.next_rule = None
 
     @property
     def is_matcher(self) -> bool:
         return isinstance(self.target_rule, str)
 
-    def __and__(self, other: 'R') -> 'R':
+    def __and__(self, other) -> 'R':
         pass
 
-    def __or__(self, other: 'R') -> 'R':
+    def __or__(self, other) -> 'R':
         assert isinstance(other, R)
         self.sibling_l.append(other)
         return self
 
-    def __xor__(self, other: 'R') -> 'R':
+    def __xor__(self, other) -> 'R':
         pass
 
     def __invert__(self) -> 'R':
         pass
 
     def __call__(self, *other_l) -> 'R':
+        if not other_l:
+            return
         cursor = self
         for other in other_l:
             assert cursor.next_rule is None and isinstance(other, R)
             cursor.next_rule = other
-            cursor = R(cursor)
-        return cursor
+            cursor = other
+        return R(self)
 
     def __str__(self):
         def group(s: str) -> str:
@@ -49,7 +51,6 @@ class R:
             if not did_group(s):
                 s = group(s)
             s += self.num
-
         if self.next_rule is not None:
             s += str(self.next_rule)
         return s
@@ -58,7 +59,7 @@ class R:
 if __name__ == '__main__':
     def test():
         _ = R
-        matcher = _(_('abc') | _('cfg'), '*')(_('iop'), _('iop'))
+        matcher = _(_(_('abc') | _('cfg'), '*')(_('iop'), _('iop')), '+')
         print(matcher)
 
 
