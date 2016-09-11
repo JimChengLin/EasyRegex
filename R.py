@@ -1,5 +1,17 @@
+def make_gen(target: str):
+    def gen(op: int):
+        ed = op
+        for expect_char in target:
+            in_char = yield 'GO'
+            if in_char == expect_char:
+                ed += 1
+            else:
+                yield 'NO'
+        yield 'OK'
+
+
 class R:
-    def __init__(self, target_rule, num=None, name=None):
+    def __init__(self, target_rule, num=None, name: str = None):
         self.target_rule = target_rule
         self.num = num
         self.name = name
