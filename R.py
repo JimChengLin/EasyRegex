@@ -1,9 +1,12 @@
 from collections import namedtuple
 
+# 原则上, 节点状态只有3个: 'GO' 'NO' Result
 Result = namedtuple('Result', 'epoche op ed')
 
 
 def make_gen(target: str):
+    # 识别target的生成器
+    # 生成器 -> FA
     def gen(epoche: int, op: int):
         ed = op
         for expect_char in target:
@@ -18,14 +21,22 @@ def make_gen(target: str):
 
 
 class R:
+    # 所有Result的临时容器
+    bucket = []
+
     def __init__(self, target_rule, num=None, name: str = None):
+        # R有两种形态, matcher和wrapper
+        # matcher识别target
+        # wrapper是对matcher的封装
         self.target_rule = target_rule
         self.num = num
         self.name = name
 
         self.sibling_l = []
         self.next_rule = None
+
         if self.is_matcher:
+            self.fa_l = []
             self.gen = make_gen(target_rule)
 
     @property
@@ -59,23 +70,65 @@ class R:
     def __str__(self):
         s = str(self.target_rule)
 
-        def group() -> str:
+        def s_group() -> str:
             return '[' + s + ']'
 
-        def did_group() -> bool:
+        def did_s_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
         if self.sibling_l:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
-            s = group()
+            s = s_group()
 
         if self.num is not None:
-            if not did_group():
-                s = group()
+            if not did_s_group():
+                s = s_group()
             s += self.num
         if self.next_rule is not None:
             s += str(self.next_rule)
         return s
+
+    def broadcast(self, char: str):
+        ret = None
+        # 层层广播, 使得状态转移
+        if self.is_matcher:
+            go_flag = False
+            no_flag = False
+            result_flag = None
+
+            if self.fa_l:
+                # 将char广播给状态机
+                next_fa_l = []
+                for fa in self.fa_l:
+                    echo = fa.send(char)
+                    if echo == 'GO':
+                        go_flag = True
+                        next_fa_l.append(fa)
+                    elif isinstance(echo, Result):
+                        # 成功, 将结果放入bucket中, 并激活下一级的R
+                        result_flag = echo
+                        R.bucket.append(echo)
+                        if self.next_rule:
+                            self.next_rule.active(echo)
+                    elif echo == 'NO':
+                        no_flag = True
+                    else:
+                        raise Exception
+            if result_flag:
+                ret = result_flag
+            elif go_flag:
+                ret = 'GO'
+            elif no_flag and not go_flag:
+                ret = 'No'
+            else:
+                raise Exception
+        else:
+            ret = self.target_rule.broadcast(char)
+        return ret
+
+    def active(self, prev: Result):
+        if self.is_matcher:
+            pass
 
 
 if __name__ == '__main__':
