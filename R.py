@@ -1,5 +1,10 @@
+from collections import namedtuple
+
+Result = namedtuple('Result', 'epoche op ed')
+
+
 def make_gen(target: str):
-    def gen(op: int):
+    def gen(epoche: int, op: int):
         ed = op
         for expect_char in target:
             in_char = yield 'GO'
@@ -7,7 +12,9 @@ def make_gen(target: str):
                 ed += 1
             else:
                 yield 'NO'
-        yield 'OK'
+        yield Result(epoche, op, ed)
+
+    return gen
 
 
 class R:
@@ -18,13 +25,15 @@ class R:
 
         self.sibling_l = []
         self.next_rule = None
+        if self.is_matcher:
+            self.gen = make_gen(target_rule)
 
     @property
     def is_matcher(self) -> bool:
         return isinstance(self.target_rule, str)
 
     def __and__(self, other) -> 'R':
-        pass
+        assert isinstance(other, R)
 
     def __or__(self, other) -> 'R':
         assert isinstance(other, R)
@@ -32,7 +41,7 @@ class R:
         return self
 
     def __xor__(self, other) -> 'R':
-        pass
+        assert isinstance(other, R)
 
     def __invert__(self) -> 'R':
         pass
@@ -48,20 +57,21 @@ class R:
         return R(self)
 
     def __str__(self):
-        def group(s: str) -> str:
+        s = str(self.target_rule)
+
+        def group() -> str:
             return '[' + s + ']'
 
-        def did_group(s: str) -> bool:
+        def did_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
-        s = str(self.target_rule)
         if self.sibling_l:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
-            s = group(s)
+            s = group()
 
         if self.num is not None:
-            if not did_group(s):
-                s = group(s)
+            if not did_group():
+                s = group()
             s += self.num
         if self.next_rule is not None:
             s += str(self.next_rule)
@@ -71,7 +81,7 @@ class R:
 if __name__ == '__main__':
     def test():
         _ = R
-        matcher = _(_(_('abc') | _('cfg'), '*')(_('iop'), _('iop')), '+')
+        matcher = _(_(_('abc') | _('cfg'), '{1}')(_('iop'), _('iop')), '{1}')
         print(matcher)
 
 
