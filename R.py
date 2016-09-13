@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-# 原则上, 节点状态只有3个: 'GO' 'NO' Result
+# 原则上, 节点状态有3个: 'GO' 'NO' Result, 由broadcast(char)返回
 Result = namedtuple('Result', 'epoche op ed')
 
 
@@ -21,13 +21,12 @@ def make_gen(target: str):
 
 
 class R:
-    # 所有Result的临时容器
+    # 所有Result的容器
     bucket = []
 
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
         # matcher识别target
-        # wrapper是对matcher的封装
         self.target_rule = target_rule
         self.num = num
         self.name = name
