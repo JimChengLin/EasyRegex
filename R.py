@@ -128,6 +128,17 @@ class R:
                 for result in this_result:
                     self.next_r.active(result)
 
+        for sibling in self.sibling_l:
+            echo = sibling.broadcast(char)
+            if isinstance(echo, list):
+                if not isinstance(this_result, list):
+                    this_result = echo
+                else:
+                    this_result.extend(echo)
+                if self.next_r:
+                    for result in echo:
+                        self.next_r.active(result)
+
         if that_result is None and isinstance(this_result, list):
             return this_result
         if isinstance(that_result, list):
@@ -145,6 +156,8 @@ class R:
             self.fa_l.append(fa)
         else:
             self.target_rule.active(prev_result)
+        for sibling in self.sibling_l:
+            sibling.active(prev_result)
 
     def match(self, resource: iter) -> list:
         result = []
@@ -177,7 +190,14 @@ if __name__ == '__main__':
         assert matcher.match('aabcdabdabccc') == [Result(1, 5, 6)]
 
 
+    def test_abc_bbc():
+        _ = R
+        matcher = (_('a') | _('b'))(_('bc'))
+        assert matcher.match('abcbbc') == [Result(0, 1, 3), Result(3, 4, 6)]
+
+
     for func in (test_str,
                  test_abc,
-                 test_abcda):
+                 test_abcda,
+                 test_abc_bbc):
         func()
