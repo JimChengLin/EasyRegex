@@ -139,9 +139,19 @@ class R:
     def active(self, prev_result: Result):
         if self.is_matcher:
             fa = self.gen(prev_result.epoche, prev_result.ed)
+            next(fa)
             self.fa_l.append(fa)
         else:
             self.target_rule.active(prev_result)
+
+    def match(self, resource: iter):
+        for i, char in enumerate(resource):
+            self.active(Result(i, i, i))
+            echo = self.broadcast(char)
+            print(echo)
+            if isinstance(echo, list):
+                echo = echo.pop()
+                print(resource[echo.op:echo.ed])
 
 
 if __name__ == '__main__':
@@ -151,4 +161,10 @@ if __name__ == '__main__':
         print(matcher)
 
 
-    test()
+    def test_abc():
+        _ = R
+        matcher = _('abc')
+        matcher.match('abcdabdabccc')
+
+
+    test_abc()
