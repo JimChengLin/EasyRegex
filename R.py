@@ -3,10 +3,10 @@ from collections import namedtuple
 Result = namedtuple('Result', 'epoche op ed')
 
 
-def make_gen(target: str):
+def make_gen(target: str) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoche: int, op: int):
+    def gen(epoche: int, op: int) -> iter:
         ed = op
         for expect_char in target:
             in_char = yield 'GO'
@@ -144,27 +144,28 @@ class R:
         else:
             self.target_rule.active(prev_result)
 
-    def match(self, resource: iter):
+    def match(self, resource: iter) -> list:
+        result = []
         for i, char in enumerate(resource):
             self.active(Result(i, i, i))
             echo = self.broadcast(char)
-            print(echo)
             if isinstance(echo, list):
-                echo = echo.pop()
-                print(resource[echo.op:echo.ed])
+                result.extend(echo)
+        return result
 
 
 if __name__ == '__main__':
-    def test():
+    def test_str():
         _ = R
         matcher = _(_(_('abc') | _('cfg'), '{1}')(_('iop'), _('iop')), '{1}')
-        print(matcher)
+        assert str(matcher) == '[[abc|cfg]{1}iopiop]{1}'
 
 
     def test_abc():
         _ = R
         matcher = _('abc')
-        matcher.match('abcdabdabccc')
+        assert matcher.match('abcdabdabccc') == [Result(0, 0, 3), Result(7, 7, 10)]
 
 
-    test_abc()
+    for func in (test_str, test_abc):
+        func()
