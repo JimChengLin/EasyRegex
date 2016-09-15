@@ -19,7 +19,7 @@ def make_gen(target: str) -> callable:
     return gen
 
 
-# 状态有3个: 'GO' 'NO' Result, 由broadcast(char: str)返回
+# 状态: 'GO' 'NO' Result, 由broadcast(char: str)返回
 class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
@@ -85,12 +85,12 @@ class R:
         return s
 
     def broadcast(self, char: str):
-        # 外到内广播char, 内到外返回result
+        # 广播char, 返回result
         that_result = None
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
-        # 广播完毕, 传递char给gen
+        # 广播完毕, 传递char给自身
         if self.is_matcher:
             # 状态
             state = {'GO': False, 'NO': False, 'Result': []}
@@ -128,16 +128,17 @@ class R:
                 for result in this_result:
                     self.next_r.active(result)
 
+        # 传递char给sibling
         for sibling in self.sibling_l:
-            echo = sibling.broadcast(char)
-            if isinstance(echo, list):
-                if not isinstance(this_result, list):
-                    this_result = echo
-                else:
-                    this_result.extend(echo)
+            other_result = sibling.broadcast(char)
+            if isinstance(other_result, list):
                 if self.next_r:
-                    for result in echo:
+                    for result in other_result:
                         self.next_r.active(result)
+                if not isinstance(this_result, list):
+                    this_result = other_result
+                else:
+                    this_result.extend(other_result)
 
         if that_result is None and isinstance(this_result, list):
             return this_result
