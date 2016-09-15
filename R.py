@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-# 原则上, 节点状态有3个: 'GO' 'NO' Result, 由broadcast(char: str)返回
+# 原则上, 状态有3个: 'GO' 'NO' Result, R由broadcast(char: str)返回, gen由yield返回
 Result = namedtuple('Result', 'epoche op ed')
 
 
@@ -21,9 +21,6 @@ def make_gen(target: str):
 
 
 class R:
-    # Result的容器
-    bucket = []
-
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
         # matcher识别target
@@ -119,7 +116,6 @@ class R:
                     for result in state['Result']:
                         self.next_r.active(result)
                 this_result = state['Result']
-                R.bucket.extend(state['Result'])
             elif state['GO']:
                 this_result = 'GO'
             elif state['NO']:
