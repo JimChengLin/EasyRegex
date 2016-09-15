@@ -130,7 +130,9 @@ class R:
 
         if that_result is None and isinstance(this_result, list):
             return this_result
-        if that_result == 'GO' or this_result == 'GO' or isinstance(this_result, list):
+        if isinstance(that_result, list):
+            return that_result
+        if that_result == 'GO' or this_result == 'GO':
             return 'GO'
         if that_result == 'NO' or this_result == 'NO':
             return 'NO'
@@ -167,5 +169,11 @@ if __name__ == '__main__':
         assert matcher.match('abcdabdabccc') == [Result(0, 0, 3), Result(7, 7, 10)]
 
 
-    for func in (test_str, test_abc):
+    def test_abcd():
+        _ = R
+        matcher = _('abc')(_('d'))
+        print(matcher.match('abcdabdabccc'))
+
+
+    for func in (test_abcd,):
         func()
