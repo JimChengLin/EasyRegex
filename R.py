@@ -27,6 +27,7 @@ class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
         # matcher识别target
+        # wrapper修饰matcher
         self.target_rule = target_rule
         self.num = num
         self.name = name
@@ -93,33 +94,32 @@ class R:
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
-        # 广播完毕, 传递char给自身
+        # 广播完毕, 传递char给gen
         if self.is_matcher:
-            # FA的状态
+            # FA状态
             state = {'GO': False, 'NO': False, 'Result': []}
-
             if self.fa_l:
-                next_fa_l = []
+                fa_l_next = []
                 for fa in self.fa_l:
                     echo = fa.send(char)
                     if echo == 'GO':
                         state['GO'] = True
-                        next_fa_l.append(fa)
+                        fa_l_next.append(fa)
                     elif isinstance(echo, Result):
                         state['Result'].append(echo)
                     elif echo == 'NO':
                         state['NO'] = True
                     else:
                         raise Exception
-                self.fa_l = next_fa_l
+                self.fa_l = fa_l_next
 
             if state['Result']:
-                # 用Result激活下一级
+                # 激活下一级
                 if self.next_r:
                     for result in state['Result']:
                         self.next_r.active(result)
-                # 设定返回值
                 this_result = state['Result']
+                R.bucket.extend(state['Result'])
             elif state['GO']:
                 this_result = 'GO'
             elif state['NO']:
@@ -128,17 +128,21 @@ class R:
                 raise Exception
         else:
             this_result = self.target_rule.broadcast(char)
+            # 激活下一级
+            if isinstance(this_result, list):
+                for result in this_result:
+                    self.next_r.active(result)
 
-        if isinstance(that_result, Result):
-            return that_result
-        else:
+        if that_result is None and isinstance(this_result, list):
             return this_result
+        if that_result == 'GO' or this_result == 'GO':
+            return 'GO'
+        if that_result == 'NO' or this_result == 'NO':
+            return 'NO'
+        raise Exception
 
     def active(self, prev: Result):
-        if self.is_matcher:
-            self.fa_l.append(self.gen(prev.epoche, prev.ed))
-        else:
-            self.target_rule.active(prev)
+        pass
 
 
 if __name__ == '__main__':
