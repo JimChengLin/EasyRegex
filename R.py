@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-# 原则上, 状态有3个: 'GO' 'NO' Result, R由broadcast(char: str)返回, gen由yield返回
 Result = namedtuple('Result', 'epoche op ed')
 
 
@@ -20,6 +19,7 @@ def make_gen(target: str):
     return gen
 
 
+# 状态有3个: 'GO' 'NO' Result, R由broadcast(char: str)返回
 class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
@@ -93,25 +93,25 @@ class R:
 
         # 广播完毕, 传递char给gen
         if self.is_matcher:
-            # FA状态
+            # 状态
             state = {'GO': False, 'NO': False, 'Result': []}
             if self.fa_l:
-                fa_l_next = []
+                next_fa_l = []
                 for fa in self.fa_l:
                     echo = fa.send(char)
                     if echo == 'GO':
                         state['GO'] = True
-                        fa_l_next.append(fa)
+                        next_fa_l.append(fa)
                     elif isinstance(echo, Result):
                         state['Result'].append(echo)
                     elif echo == 'NO':
                         state['NO'] = True
                     else:
                         raise Exception
-                self.fa_l = fa_l_next
+                self.fa_l = next_fa_l
 
             if state['Result']:
-                # 激活下一级
+                # 激活下级
                 if self.next_r:
                     for result in state['Result']:
                         self.next_r.active(result)
@@ -124,21 +124,25 @@ class R:
                 raise Exception
         else:
             this_result = self.target_rule.broadcast(char)
-            # 激活下一级
+            # 激活下级
             if isinstance(this_result, list):
                 for result in this_result:
                     self.next_r.active(result)
 
         if that_result is None and isinstance(this_result, list):
             return this_result
-        if that_result == 'GO' or this_result == 'GO':
+        if that_result == 'GO' or this_result == 'GO' or isinstance(this_result, list):
             return 'GO'
         if that_result == 'NO' or this_result == 'NO':
             return 'NO'
         raise Exception
 
-    def active(self, prev: Result):
-        pass
+    def active(self, prev_result: Result):
+        if self.is_matcher:
+            fa = self.gen(prev_result.epoche, prev_result.ed)
+            self.fa_l.append(fa)
+        else:
+            self.target_rule.active(prev_result)
 
 
 if __name__ == '__main__':
