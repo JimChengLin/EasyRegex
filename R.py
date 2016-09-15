@@ -19,12 +19,11 @@ def make_gen(target: str):
     return gen
 
 
-# 状态有3个: 'GO' 'NO' Result, R由broadcast(char: str)返回
+# 状态有3个: 'GO' 'NO' Result, 由broadcast(char: str)返回
 class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
         # matcher识别target
-        # wrapper修饰matcher
         self.target_rule = target_rule
         self.num = num
         self.name = name
@@ -70,7 +69,7 @@ class R:
         def s_group() -> str:
             return '[' + s + ']'
 
-        def did_s_group() -> bool:
+        def do_s_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
         if self.sibling_l:
@@ -78,7 +77,7 @@ class R:
             s = s_group()
 
         if self.num is not None:
-            if not did_s_group():
+            if not do_s_group():
                 s = s_group()
             s += self.num
         if self.next_r is not None:
@@ -86,7 +85,7 @@ class R:
         return s
 
     def broadcast(self, char: str):
-        # 广播char, 递归返回result
+        # 外到内广播char, 内到外返回result
         that_result = None
         if self.next_r:
             that_result = self.next_r.broadcast(char)
@@ -118,14 +117,14 @@ class R:
                 this_result = state['Result']
             elif state['GO']:
                 this_result = 'GO'
-            elif state['NO']:
+            elif state['NO'] or not self.fa_l:
                 this_result = 'NO'
             else:
                 raise Exception
         else:
             this_result = self.target_rule.broadcast(char)
             # 激活下级
-            if isinstance(this_result, list):
+            if isinstance(this_result, list) and self.next_r:
                 for result in this_result:
                     self.next_r.active(result)
 
