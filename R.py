@@ -201,6 +201,12 @@ if __name__ == '__main__':
         assert matcher.match('abcbbc') == [Result(0, 1, 3), Result(3, 4, 6)]
 
 
+    def test_b_2_cd():
+        _ = R
+        matcher = _(_('b'), '{2}')(_('cd'))
+        print(matcher.match('bbcda'))
+
+
     for func in (test_str,
                  test_abc,
                  test_abcda,
