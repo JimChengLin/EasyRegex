@@ -9,14 +9,18 @@ def make_gen(target: str) -> callable:
     def gen(epoche: int, op: int) -> iter:
         ed = op
         for expect_char in target:
-            in_char = yield 'GO'
-            if in_char == expect_char:
+            recv_char = yield 'GO'
+            if recv_char == expect_char:
                 ed += 1
             else:
                 yield 'NO'
         yield Result(epoche, op, ed)
 
     return gen
+
+
+def is_l(obj) -> bool:
+    return isinstance(obj, list)
 
 
 # 状态: 'GO' 'NO' Result, 由broadcast(char: str)返回
@@ -69,7 +73,7 @@ class R:
         def s_group() -> str:
             return '[' + s + ']'
 
-        def do_s_group() -> bool:
+        def did_s_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
         if self.sibling_l:
@@ -77,7 +81,7 @@ class R:
             s = s_group()
 
         if self.num is not None:
-            if not do_s_group():
+            if not did_s_group():
                 s = s_group()
             s += self.num
         if self.next_r is not None:
@@ -85,12 +89,12 @@ class R:
         return s
 
     def broadcast(self, char: str):
-        # 广播char, 返回result
+        # 广播char
         that_result = None
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
-        # 广播完毕, 传递char给自身
+        # 传递char给自身
         if self.is_matcher:
             # 状态
             state = {'GO': False, 'NO': False, 'Result': []}
@@ -124,27 +128,26 @@ class R:
         else:
             this_result = self.target_rule.broadcast(char)
             # 激活下级
-            if isinstance(this_result, list) and self.next_r:
+            if is_l(this_result) and self.next_r:
                 for result in this_result:
                     self.next_r.active(result)
 
         # 传递char给sibling
         for sibling in self.sibling_l:
-            other_result = sibling.broadcast(char)
-            if isinstance(other_result, list):
+            another_result = sibling.broadcast(char)
+            if is_l(another_result):
                 if self.next_r:
-                    for result in other_result:
+                    for result in another_result:
                         self.next_r.active(result)
-                if not isinstance(this_result, list):
-                    this_result = other_result
-                else:
-                    this_result.extend(other_result)
+                this_result = this_result + another_result if is_l(this_result) else another_result
+            elif another_result == 'GO' and this_result == 'NO':
+                this_result = 'GO'
 
-        if that_result is None and isinstance(this_result, list):
+        if that_result is None and is_l(this_result):
             return this_result
-        if isinstance(that_result, list):
+        if is_l(that_result):
             return that_result
-        if that_result == 'GO' or this_result == 'GO' or isinstance(this_result, list):
+        if that_result == 'GO' or this_result == 'GO' or is_l(this_result):
             return 'GO'
         if that_result == 'NO' or this_result == 'NO':
             return 'NO'
@@ -164,9 +167,9 @@ class R:
         result = []
         for i, char in enumerate(resource):
             self.active(Result(i, i, i))
-            echo = self.broadcast(char)
-            if isinstance(echo, list):
-                result.extend(echo)
+            res = self.broadcast(char)
+            if is_l(res):
+                result.extend(res)
         return result
 
 
