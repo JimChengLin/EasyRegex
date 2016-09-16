@@ -94,6 +94,7 @@ class R:
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
+        result_l = []
         # 传递char给自身
         if self.is_matcher:
             # 状态
@@ -114,10 +115,7 @@ class R:
                 self.fa_l = next_fa_l
 
             if state['Result']:
-                # 激活下级
-                if self.next_r:
-                    for result in state['Result']:
-                        self.next_r.active(result)
+                result_l.extend(state['Result'])
                 this_result = state['Result']
             elif state['GO']:
                 this_result = 'GO'
@@ -127,18 +125,14 @@ class R:
                 raise Exception
         else:
             this_result = self.target_rule.broadcast(char)
-            # 激活下级
-            if is_l(this_result) and self.next_r:
-                for result in this_result:
-                    self.next_r.active(result)
+            if is_l(this_result):
+                result_l.extend(this_result)
 
         # 传递char给sibling
         for sibling in self.sibling_l:
             another_result = sibling.broadcast(char)
             if is_l(another_result):
-                if self.next_r:
-                    for result in another_result:
-                        self.next_r.active(result)
+                result_l.extend(another_result)
                 if is_l(this_result):
                     this_result.extend(another_result)
                 else:
@@ -146,6 +140,10 @@ class R:
             elif another_result == 'GO' and this_result == 'NO':
                 this_result = 'GO'
 
+        # 激活下级
+        if self.next_r:
+            for result in result_l:
+                self.next_r.active(result)
         if that_result is None and is_l(this_result):
             return this_result
         if is_l(that_result):
