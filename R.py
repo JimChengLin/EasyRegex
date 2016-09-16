@@ -15,6 +15,7 @@ def make_gen(target: str) -> callable:
             else:
                 yield 'NO'
         yield Result(epoche, op, ed)
+        yield 'NO'
 
     return gen
 
@@ -108,6 +109,7 @@ class R:
                         next_fa_l.append(fa)
                     elif isinstance(echo, Result):
                         state['Result'].append(echo)
+                        next_fa_l.append(fa)
                     elif echo == 'NO':
                         state['NO'] = True
                     else:
@@ -144,6 +146,7 @@ class R:
         if self.next_r:
             for result in result_l:
                 self.next_r.active(result)
+
         if that_result is None and is_l(this_result):
             return this_result
         if is_l(that_result):
