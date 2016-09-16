@@ -139,7 +139,10 @@ class R:
                 if self.next_r:
                     for result in another_result:
                         self.next_r.active(result)
-                this_result = this_result + another_result if is_l(this_result) else another_result
+                if is_l(this_result):
+                    this_result.extend(another_result)
+                else:
+                    this_result = another_result
             elif another_result == 'GO' and this_result == 'NO':
                 this_result = 'GO'
 
