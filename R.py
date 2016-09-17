@@ -1,4 +1,5 @@
 from collections import namedtuple
+from math import inf
 
 Result = namedtuple('Result', 'epoche op ed')
 
@@ -24,13 +25,45 @@ def is_l(obj) -> bool:
     return isinstance(obj, list)
 
 
+def parse_n(num) -> tuple:
+    if num is None:
+        return 1, 1
+    if isinstance(num, int):
+        return num, num
+    if isinstance(num, tuple):
+        return num
+    if isinstance(num, str):
+        if num == '*':
+            return 0, inf
+        if num == '+':
+            return 1, inf
+        assert num.startswith('{') and num.endswith('}')
+        num = num[1:-1]
+        num = tuple(map(int, num.split(',')))
+        if len(num) == 1:
+            num *= 2
+        return num
+    raise Exception
+
+
+def str_n(num: tuple) -> str:
+    from_num, to_num = num
+    assert from_num <= to_num
+    if from_num == to_num:
+        if from_num == 1:
+            return ''
+        return '{' + str(from_num) + '}'
+    else:
+        return '{' + str(from_num) + ',' + str(to_num) + '}'
+
+
 # 状态: 'GO' 'NO' Result, 由broadcast(char: str)返回
 class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
         # matcher识别target
         self.target_rule = target_rule
-        self.num = num
+        self.num = parse_n(num)
         self.name = name
 
         self.next_r = None
@@ -81,10 +114,10 @@ class R:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
             s = s_group()
 
-        if self.num is not None:
+        if self.num != (1, 1):
             if not did_s_group():
                 s = s_group()
-            s += self.num
+            s += str_n(self.num)
         if self.next_r is not None:
             s += str(self.next_r)
         return s
@@ -181,7 +214,7 @@ if __name__ == '__main__':
     def test_str():
         _ = R
         matcher = _(_(_('abc') | _('cfg'), '{1}')(_('iop'), _('iop')), '{1}')
-        assert str(matcher) == '[[abc|cfg]{1}iopiop]{1}'
+        assert str(matcher) == '[abc|cfg]iopiop'
 
 
     def test_abc():
