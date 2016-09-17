@@ -4,7 +4,7 @@ from math import inf
 Result = namedtuple('Result', 'epoche op ed')
 
 
-def make_gen(target: str) -> callable:
+def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
     def gen(epoche: int, op: int) -> iter:
@@ -18,7 +18,14 @@ def make_gen(target: str) -> callable:
         yield Result(epoche, op, ed)
         yield 'NO'
 
-    return gen
+    if num[-1] == 1:
+        return gen
+    else:
+        def decorate_g(epoche: int, op: int) -> iter:
+            counter = 0
+            from_num, to_num = num
+
+        return decorate_g
 
 
 def is_l(obj) -> bool:
@@ -71,7 +78,7 @@ class R:
 
         if self.is_matcher:
             self.fa_l = []
-            self.gen = make_gen(target_rule)
+            self.gen = make_gen(target_rule, self.num)
 
     @property
     def is_matcher(self) -> bool:
@@ -114,10 +121,11 @@ class R:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
             s = s_group()
 
-        if self.num != (1, 1):
+        num_str = str_n(self.num)
+        if num_str:
             if not did_s_group():
                 s = s_group()
-            s += str_n(self.num)
+            s += num_str
         if self.next_r is not None:
             s += str(self.next_r)
         return s
@@ -179,7 +187,6 @@ class R:
         if self.next_r:
             for result in result_l:
                 self.next_r.active(result)
-
         if that_result is None and is_l(this_result):
             return this_result
         if is_l(that_result):
