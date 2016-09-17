@@ -33,10 +33,11 @@ def make_gen(target: str, num: tuple) -> callable:
                 echo = inner_gen.send(recv_char)
                 if isinstance(echo, Result):
                     counter += 1
+                    ed = echo.ed
                     if counter < from_num:
                         echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoche, echo.ed)
+                        inner_gen = gen(epoche, ed)
                         next(inner_gen)
                     else:
                         yield echo
@@ -264,12 +265,13 @@ if __name__ == '__main__':
 
     def test_b_2_cd():
         _ = R
-        matcher = _(_('b'), '{2}')(_('cd'))
+        matcher = _('b', '{2}')(_('cd'))
         print(matcher.match('bbcda'))
 
 
     for func in (test_str,
                  test_abc,
                  test_abcda,
-                 test_abc_bbc):
+                 test_abc_bbc,
+                 test_b_2_cd):
         func()
