@@ -142,7 +142,7 @@ class R:
 
         num_str = str_n(self.num)
         if num_str:
-            if not did_s_group() and len(s) > 1:
+            if len(s) > 1 and not did_s_group():
                 s = s_group()
             s += num_str
         if self.next_r is not None:
@@ -218,6 +218,12 @@ class R:
         if self.next_r:
             for result in result_l:
                 self.next_r.active(result)
+            if self.next_r.num[0] == 0 and self.next_r.next_r is None:
+                if is_l(that_result):
+                    that_result.extend(result_l)
+                else:
+                    that_result = result_l
+
         if that_result is None and is_l(this_result):
             return this_result
         if is_l(that_result):
@@ -235,10 +241,14 @@ class R:
             self.fa_l.append(fa)
         else:
             self.target_rule.active(prev_result)
+
         for sibling in self.sibling_l:
             sibling.active(prev_result)
+        if self.num[0] == 0 and self.next_r:
+            self.next_r.active(prev_result)
 
     def match(self, resource: iter) -> list:
+        assert self.num[0] > 0
         result_l = []
         for i, char in enumerate(resource):
             self.active(Result(i, i, i, 0))
@@ -278,14 +288,21 @@ if __name__ == '__main__':
     def test_b_2_cd():
         _ = R
         matcher = _('b', '{1,2}')(_('cd'))
-        print(matcher.match('bbcda'))
+        assert matcher.match('bbcda') == [Result(0, 2, 4, 0), Result(1, 2, 4, 0)]
         matcher = _(_('b'), '{2}')(_('cd'))
-        print(matcher.match('bbcda'))
+        assert matcher.match('bbcda') == [Result(0, 2, 4, 0)]
+
+
+    def test_optional_abc_bc():
+        _ = R
+        matcher = _('b', '{0,1}')(_('cd'))
+        assert matcher.match('cdabcd') == [Result(0, 0, 2, 0), Result(3, 4, 6, 0), Result(4, 4, 6, 0)]
 
 
     for func in (test_str,
                  test_abc,
                  test_abcda,
                  test_abc_bbc,
-                 test_b_2_cd):
+                 test_b_2_cd,
+                 test_optional_abc_bc):
         func()
