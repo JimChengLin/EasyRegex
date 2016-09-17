@@ -1,13 +1,13 @@
 from collections import namedtuple
 from math import inf
 
-Result = namedtuple('Result', 'epoche op ed')
+Result = namedtuple('Result', 'epoche op ed nth')
 
 
 def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoche: int, op: int) -> iter:
+    def gen(epoche: int, op: int, nth: int) -> iter:
         ed = op
         for expect_char in target:
             recv_char = yield 'GO'
@@ -15,16 +15,16 @@ def make_gen(target: str, num: tuple) -> callable:
                 ed += 1
             else:
                 yield 'NO'
-        yield Result(epoche, op, ed)
+        yield Result(epoche, op, ed, nth)
         yield 'NO'
 
     if num[-1] == 1:
         return gen
     else:
-        def decorate_g(epoche: int, op: int) -> iter:
+        def decorate_g(epoche: int, op: int, nth: int) -> iter:
             counter = 0
             from_num, to_num = num
-            inner_gen = gen(epoche, op)
+            inner_gen = gen(epoche, op, nth)
             next(inner_gen)
             curr_state = 'GO'
 
@@ -37,7 +37,7 @@ def make_gen(target: str, num: tuple) -> callable:
                     if counter < from_num:
                         echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoche, ed)
+                        inner_gen = gen(epoche, ed, nth)
                         next(inner_gen)
                     else:
                         yield echo
@@ -218,7 +218,7 @@ class R:
 
     def active(self, prev_result: Result):
         if self.is_matcher:
-            fa = self.gen(prev_result.epoche, prev_result.ed)
+            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth)
             next(fa)
             self.fa_l.append(fa)
         else:
@@ -229,7 +229,7 @@ class R:
     def match(self, resource: iter) -> list:
         result_l = []
         for i, char in enumerate(resource):
-            self.active(Result(i, i, i))
+            self.active(Result(i, i, i, 0))
             res = self.broadcast(char)
             if is_l(res):
                 result_l.extend(res)
@@ -246,21 +246,21 @@ if __name__ == '__main__':
     def test_abc():
         _ = R
         matcher = _('abc')
-        assert matcher.match('abcdabdabccc') == [Result(0, 0, 3), Result(7, 7, 10)]
+        assert matcher.match('abcdabdabccc') == [Result(0, 0, 3, 0), Result(7, 7, 10, 0)]
 
 
     def test_abcda():
         _ = R
         matcher = _('abc')(_('d'), _('a'))
-        assert matcher.match('abcdabdabccc') == [Result(0, 4, 5)]
+        assert matcher.match('abcdabdabccc') == [Result(0, 4, 5, 0)]
         matcher = _('abc')(_('d'), _('a'))
-        assert matcher.match('aabcdabdabccc') == [Result(1, 5, 6)]
+        assert matcher.match('aabcdabdabccc') == [Result(1, 5, 6, 0)]
 
 
     def test_abc_bbc():
         _ = R
         matcher = (_('a') | _('b'))(_('bc'))
-        assert matcher.match('abcbbc') == [Result(0, 1, 3), Result(3, 4, 6)]
+        assert matcher.match('abcbbc') == [Result(0, 1, 3, 0), Result(3, 4, 6, 0)]
 
 
     def test_b_2_cd():
