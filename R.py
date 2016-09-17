@@ -188,7 +188,19 @@ class R:
         else:
             this_result = self.target_rule.broadcast(char)
             if is_l(this_result):
-                result_l.extend(this_result)
+                filter_this_result = []
+                from_num, to_num = self.num
+                for result in this_result:
+                    nth = result.nth + 1
+                    if nth < to_num:
+                        self.active(result._replace(nth=nth))
+                    if from_num <= nth <= to_num:
+                        filter_this_result.append(result._replace(nth=0))
+                this_result = filter_this_result
+                if this_result:
+                    result_l.extend(this_result)
+                else:
+                    this_result = 'GO'
 
         # 传递char给sibling
         for sibling in self.sibling_l:
