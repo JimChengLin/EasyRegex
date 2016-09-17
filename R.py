@@ -142,7 +142,7 @@ class R:
 
         num_str = str_n(self.num)
         if num_str:
-            if not did_s_group():
+            if not did_s_group() and len(s) > 1:
                 s = s_group()
             s += num_str
         if self.next_r is not None:
@@ -227,13 +227,13 @@ class R:
             sibling.active(prev_result)
 
     def match(self, resource: iter) -> list:
-        result = []
+        result_l = []
         for i, char in enumerate(resource):
             self.active(Result(i, i, i))
             res = self.broadcast(char)
             if is_l(res):
-                result.extend(res)
-        return result
+                result_l.extend(res)
+        return result_l
 
 
 if __name__ == '__main__':
@@ -265,7 +265,9 @@ if __name__ == '__main__':
 
     def test_b_2_cd():
         _ = R
-        matcher = _('b', '{2}')(_('cd'))
+        matcher = _('b', '{1,2}')(_('cd'))
+        print(matcher.match('bbcda'))
+        matcher = _(_('b'), '{2}')(_('cd'))
         print(matcher.match('bbcda'))
 
 
