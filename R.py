@@ -24,6 +24,24 @@ def make_gen(target: str, num: tuple) -> callable:
         def decorate_g(epoche: int, op: int) -> iter:
             counter = 0
             from_num, to_num = num
+            inner_gen = gen(epoche, op)
+            next(inner_gen)
+            curr_state = 'GO'
+
+            while counter < to_num:
+                recv_char = yield curr_state
+                echo = inner_gen.send(recv_char)
+                if isinstance(echo, Result):
+                    counter += 1
+                    if counter < from_num:
+                        echo = 'GO'
+                    if counter < to_num:
+                        inner_gen = gen(epoche, echo.ed)
+                        next(inner_gen)
+                    else:
+                        yield echo
+                curr_state = echo
+            yield 'NO'
 
         return decorate_g
 
