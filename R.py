@@ -27,7 +27,7 @@ def make_gen(target: str, num: tuple) -> callable:
         for expect_char in target:
             recv_char = yield 'GO'
             if record:
-                prev_str += prev_str
+                prev_str += recv_char
             if recv_char == expect_char:
                 ed += 1
             else:
@@ -122,7 +122,11 @@ class R:
         return isinstance(self.target_rule, str)
 
     def __and__(self, other) -> 'R':
-        assert isinstance(other, R)
+        assert isinstance(other, R) and self.demand_r is None
+        other = other.clone()
+        self_clone = self.clone()
+        self_clone.demand_r = other
+        return R(self_clone)
 
     def __or__(self, other) -> 'R':
         assert isinstance(other, R)
@@ -213,18 +217,35 @@ class R:
                 filter_result = []
                 # 有效区间
                 from_num, to_num = self.num
-                for result in this_result:
-                    result.nth += 1
-                    if result.nth < to_num:
-                        self.active(result)
-                    if from_num <= result.nth <= to_num:
-                        result.nth = 0
-                        filter_result.append(result)
+                for res in this_result:
+                    res.nth += 1
+                    if res.nth < to_num:
+                        self.active(res)
+                    if from_num <= res.nth <= to_num:
+                        res.nth = 0
+                        filter_result.append(res)
                 this_result = filter_result
                 if this_result:
                     active_result.extend(this_result)
                 else:
                     this_result = 'GO'
+
+        if self.demand_r and is_l(this_result):  # OP and
+            filter_result = []
+            for res in this_result:
+                demand_result = None
+                self.demand_r.active(Result(res.epoche, res.op, res.op))
+                for char in res.prev_str:
+                    demand_result = self.demand_r.broadcast(char)
+                if is_l(demand_result):
+                    for demand_res in demand_result:
+                        if demand_res.epoche == res.epoche and demand_res.ed == res.ed:
+                            filter_result.append(res)
+                            break
+            if filter_result:
+                this_result = filter_result
+            else:
+                this_result = 'GO'
 
         # 传递char给sibling
         for sibling in self.sibling_l:
@@ -240,8 +261,8 @@ class R:
 
         # 激活下级
         if self.next_r:
-            for result in active_result:
-                self.next_r.active(result)
+            for res in active_result:
+                self.next_r.active(res)
             if self.next_r.num[0] == 0 and self.next_r.next_r is None:
                 if is_l(that_result):
                     that_result.extend(active_result)
@@ -273,13 +294,13 @@ class R:
 
     def match(self, source: iter) -> list:
         assert self.num[0] > 0
-        result_l = []
+        res_l = []
         for i, char in enumerate(source):
             self.active(Result(i, i, i))
             this_result = self.broadcast(char)
             if is_l(this_result):
-                result_l.extend(this_result)
-        return result_l
+                res_l.extend(this_result)
+        return res_l
 
     def clone(self) -> 'R':
         matcher = copy(self)
@@ -345,11 +366,20 @@ if __name__ == '__main__':
         assert str(matcher.match('abcccc')) == '[FT(0, 3), FT(0, 4), FT(0, 5), FT(0, 6)]'
 
 
-    for func in (test_str,
-                 test_abc,
-                 test_abcda,
-                 test_abc_bbc,
-                 test_b_2_cd,
-                 test_optional_abc_bc,
-                 test_ab_c_star_c_plus,):
+    def test_abc_and_abc():
+        _ = R
+        matcher = _('abc') & _('abc')
+        assert str(matcher.match('abc')) == '[FT(0, 3)]'
+
+
+    for func in (
+            test_str,
+            test_abc,
+            test_abcda,
+            test_abc_bbc,
+            test_b_2_cd,
+            test_optional_abc_bc,
+            test_ab_c_star_c_plus,
+            test_abc_and_abc,
+    ):
         func()
