@@ -106,7 +106,6 @@ class R:
 
         self.next_r = None
         self.sibling_l = []
-        self.invert = False
 
         if self.is_matcher:
             self.fa_l = []
@@ -128,7 +127,7 @@ class R:
         assert isinstance(other, R)
 
     def __invert__(self) -> 'R':
-        self.invert = not self.invert
+        pass
 
     def __call__(self, *other_l) -> 'R':
         if not other_l:
@@ -140,7 +139,7 @@ class R:
             cursor = other
         return R(self)
 
-    def __str__(self):
+    def __repr__(self):
         s = str(self.target_rule)
 
         def s_group() -> str:
