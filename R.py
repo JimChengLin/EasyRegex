@@ -1,7 +1,16 @@
-from collections import namedtuple
 from math import inf
 
-Result = namedtuple('Result', 'epoche op ed nth')
+
+class Result:
+    def __init__(self, epoche: int, op: int, ed: int, nth=0):
+        self.epoche = epoche
+        self.op = op
+        self.ed = ed
+        self.nth = nth
+
+    def __eq__(self, other):
+        if isinstance(other, Result):
+            return self.epoche == other.epoche and self.ed == other.ed
 
 
 def make_gen(target: str, num: tuple) -> callable:
@@ -191,11 +200,12 @@ class R:
                 filter_this_result = []
                 from_num, to_num = self.num
                 for result in this_result:
-                    nth = result.nth + 1
-                    if nth < to_num:
-                        self.active(result._replace(nth=nth))
-                    if from_num <= nth <= to_num:
-                        filter_this_result.append(result._replace(nth=0))
+                    result.nth += 1
+                    if result.nth < to_num:
+                        self.active(result)
+                    if from_num <= result.nth <= to_num:
+                        result.nth = 0
+                        filter_this_result.append(result)
                 this_result = filter_this_result
                 if this_result:
                     result_l.extend(this_result)
@@ -251,7 +261,7 @@ class R:
         assert self.num[0] > 0
         result_l = []
         for i, char in enumerate(resource):
-            self.active(Result(i, i, i, 0))
+            self.active(Result(i, i, i))
             res = self.broadcast(char)
             if is_l(res):
                 result_l.extend(res)
@@ -268,35 +278,35 @@ if __name__ == '__main__':
     def test_abc():
         _ = R
         matcher = _('abc')
-        assert matcher.match('abcdabdabccc') == [Result(0, 0, 3, 0), Result(7, 7, 10, 0)]
+        assert matcher.match('abcdabdabccc') == [Result(0, 0, 3), Result(7, 7, 10)]
 
 
     def test_abcda():
         _ = R
         matcher = _('abc')(_('d'), _('a'))
-        assert matcher.match('abcdabdabccc') == [Result(0, 4, 5, 0)]
+        assert matcher.match('abcdabdabccc') == [Result(0, 4, 5)]
         matcher = _('abc')(_('d'), _('a'))
-        assert matcher.match('aabcdabdabccc') == [Result(1, 5, 6, 0)]
+        assert matcher.match('aabcdabdabccc') == [Result(1, 5, 6)]
 
 
     def test_abc_bbc():
         _ = R
         matcher = (_('a') | _('b'))(_('bc'))
-        assert matcher.match('abcbbc') == [Result(0, 1, 3, 0), Result(3, 4, 6, 0)]
+        assert matcher.match('abcbbc') == [Result(0, 1, 3), Result(3, 4, 6)]
 
 
     def test_b_2_cd():
         _ = R
         matcher = _('b', '{1,2}')(_('cd'))
-        assert matcher.match('bbcda') == [Result(0, 2, 4, 0), Result(1, 2, 4, 0)]
+        assert matcher.match('bbcda') == [Result(0, 2, 4), Result(1, 2, 4)]
         matcher = _(_('b'), '{2}')(_('cd'))
-        assert matcher.match('bbcda') == [Result(0, 2, 4, 0)]
+        assert matcher.match('bbcda') == [Result(0, 2, 4)]
 
 
     def test_optional_abc_bc():
         _ = R
         matcher = _('b', '{0,1}')(_('cd'))
-        assert matcher.match('cdabcd') == [Result(0, 0, 2, 0), Result(3, 4, 6, 0), Result(4, 4, 6, 0)]
+        assert matcher.match('cdabcd') == [Result(0, 0, 2), Result(3, 4, 6), Result(4, 4, 6)]
 
 
     for func in (test_str,
