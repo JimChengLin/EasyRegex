@@ -382,8 +382,8 @@ if __name__ == '__main__':
     def test_abc_and_abc():
         _ = R
         matcher = (_('abc') & _('abc') & _('abc'))(_('d'))
-        print(matcher)
-        print(matcher.match('abcd'))
+        assert str(matcher) == '[abc&abc&abc]d'
+        assert str(matcher.match('abcd')) == '[FT(0, 4)]'
 
 
     for func in (
