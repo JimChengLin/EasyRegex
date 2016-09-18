@@ -1,6 +1,8 @@
 from copy import copy
 from math import inf
 
+NULL = '\00'
+
 
 class Result:
     def __init__(self, epoche: int, op: int, ed: int, nth=0, prev_str=''):
@@ -230,13 +232,14 @@ class R:
                 else:
                     this_result = 'GO'
 
-        if self.demand_r and is_l(this_result):  # OP and
+        if self.demand_r and is_l(this_result):  # OP AND
             filter_result = []
             for res in this_result:
                 demand_result = None
                 self.demand_r.active(Result(res.epoche, res.op, res.op))
                 for char in res.prev_str:
                     demand_result = self.demand_r.broadcast(char)
+                self.demand_r.broadcast(NULL)
                 if is_l(demand_result):
                     for demand_res in demand_result:
                         if demand_res.epoche == res.epoche and demand_res.ed == res.ed:
@@ -369,7 +372,7 @@ if __name__ == '__main__':
     def test_abc_and_abc():
         _ = R
         matcher = _('abc') & _('abc')
-        assert str(matcher.match('abc')) == '[FT(0, 3)]'
+        print(matcher.match('abc'))
 
 
     for func in (
