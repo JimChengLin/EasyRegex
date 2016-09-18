@@ -3,11 +3,12 @@ from math import inf
 
 
 class Result:
-    def __init__(self, epoche: int, op: int, ed: int, nth=0):
+    def __init__(self, epoche: int, op: int, ed: int, nth=0, prev_str=''):
         self.epoche = epoche
         self.op = op
         self.ed = ed
         self.nth = nth
+        self.prev_str = prev_str
 
     def __eq__(self, other):
         if isinstance(other, Result):
@@ -20,24 +21,27 @@ class Result:
 def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoche: int, op: int, nth: int) -> iter:
+    def gen(epoche: int, op: int, nth: int, record: bool) -> iter:
         ed = op
+        prev_str = ''
         for expect_char in target:
             recv_char = yield 'GO'
+            if record:
+                prev_str += prev_str
             if recv_char == expect_char:
                 ed += 1
             else:
                 yield 'NO'
-        yield Result(epoche, op, ed, nth)
+        yield Result(epoche, op, ed, nth, prev_str)
         yield 'NO'
 
     if num[-1] == 1:
         return gen
     else:
-        def decorate_g(epoche: int, op: int, nth: int) -> iter:
+        def decorate_g(epoche: int, op: int, nth: int, record: bool) -> iter:
             counter = 0
             from_num, to_num = num
-            inner_gen = gen(epoche, op, nth)
+            inner_gen = gen(epoche, op, nth, record)
             next(inner_gen)
             curr_state = 'GO'
 
@@ -50,7 +54,7 @@ def make_gen(target: str, num: tuple) -> callable:
                     if counter < from_num:
                         echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoche, ed, nth)
+                        inner_gen = gen(epoche, ed, nth, record)
                         next(inner_gen)
                     elif counter == to_num:
                         yield echo
@@ -106,6 +110,7 @@ class R:
         self.name = name
 
         self.next_r = None
+        self.demand_r = None
         self.sibling_l = []
 
         if self.is_matcher:
@@ -121,6 +126,7 @@ class R:
 
     def __or__(self, other) -> 'R':
         assert isinstance(other, R)
+        other = other.clone()
         self_clone = self.clone()
         self_clone.sibling_l.append(other)
         return self_clone
@@ -138,6 +144,7 @@ class R:
         cursor = self_clone
         for other in other_l:
             assert cursor.next_r is None and isinstance(other, R)
+            other = other.clone()
             cursor.next_r = other
             cursor = other
         return R(self_clone)
@@ -176,20 +183,20 @@ class R:
             # 状态
             state = {'GO': False, 'NO': False, 'Result': []}
             if self.fa_l:
-                next_fa_l = []
+                fa_l = []
                 for fa in self.fa_l:
                     echo = fa.send(char)
                     if echo == 'GO':
                         state['GO'] = True
-                        next_fa_l.append(fa)
+                        fa_l.append(fa)
                     elif isinstance(echo, Result):
                         state['Result'].append(echo)
-                        next_fa_l.append(fa)
+                        fa_l.append(fa)
                     elif echo == 'NO':
                         state['NO'] = True
                     else:
                         raise Exception
-                self.fa_l = next_fa_l
+                self.fa_l = fa_l
 
             if state['Result']:
                 active_result.extend(state['Result'])
@@ -253,7 +260,7 @@ class R:
 
     def active(self, prev_result: Result):
         if self.is_matcher:
-            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth)
+            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, bool(self.demand_r))
             next(fa)
             self.fa_l.append(fa)
         else:
@@ -264,20 +271,28 @@ class R:
         if self.num[0] == 0 and self.next_r:
             self.next_r.active(prev_result)
 
-    def match(self, resource: iter) -> list:
+    def match(self, source: iter) -> list:
         assert self.num[0] > 0
         result_l = []
-        for i, char in enumerate(resource):
+        for i, char in enumerate(source):
             self.active(Result(i, i, i))
-            response = self.broadcast(char)
-            if is_l(response):
-                result_l.extend(response)
+            this_result = self.broadcast(char)
+            if is_l(this_result):
+                result_l.extend(this_result)
         return result_l
 
     def clone(self) -> 'R':
         matcher = copy(self)
+        if matcher.next_r:
+            matcher.next_r = matcher.next_r.clone()
+        if matcher.demand_r:
+            matcher.demand_r = matcher.demand_r.clone()
+        matcher.sibling_l = [i.clone() for i in matcher.sibling_l]
+
         if matcher.is_matcher:
             matcher.fa_l = []
+        else:
+            matcher.target_rule = matcher.target_rule.clone()
         return matcher
 
 
