@@ -124,11 +124,17 @@ class R:
         return isinstance(self.target_rule, str)
 
     def __and__(self, other) -> 'R':
-        assert isinstance(other, R) and self.demand_r is None
+        assert isinstance(other, R)
         other = other.clone()
         self_clone = self.clone()
-        self_clone.demand_r = other
-        return R(self_clone)
+        if self_clone.sibling_l:
+            cursor = R(self_clone)
+        else:
+            cursor = self_clone
+            while cursor.demand_r is not None:
+                cursor = cursor.demand_r
+        cursor.demand_r = other
+        return self_clone
 
     def __or__(self, other) -> 'R':
         assert isinstance(other, R)
@@ -164,6 +170,10 @@ class R:
         def do_s_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
+        if self.demand_r:
+            s += '&' + str(self.demand_r)
+            if self.next_r and self.next_r.demand_r is None:
+                s = s_group()
         if self.sibling_l:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
             s = s_group()
@@ -282,13 +292,13 @@ class R:
             return 'NO'
         raise Exception
 
-    def active(self, prev_result: Result):
+    def active(self, prev_result: Result, record=False):
         if self.is_matcher:
-            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, bool(self.demand_r))
+            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, record or bool(self.demand_r))
             next(fa)
             self.fa_l.append(fa)
         else:
-            self.target_rule.active(prev_result)
+            self.target_rule.active(prev_result, bool(self.demand_r))
 
         for sibling in self.sibling_l:
             sibling.active(prev_result)
@@ -371,8 +381,9 @@ if __name__ == '__main__':
 
     def test_abc_and_abc():
         _ = R
-        matcher = _('abc') & _('abc')
-        print(matcher.match('abc'))
+        matcher = (_('abc') & _('abc') & _('abc'))(_('d'))
+        print(matcher)
+        print(matcher.match('abcd'))
 
 
     for func in (
