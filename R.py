@@ -1,3 +1,4 @@
+from copy import copy
 from math import inf
 
 
@@ -120,8 +121,9 @@ class R:
 
     def __or__(self, other) -> 'R':
         assert isinstance(other, R)
-        self.sibling_l.append(other)
-        return self
+        self_clone = self.clone()
+        self_clone.sibling_l.append(other)
+        return self_clone
 
     def __xor__(self, other) -> 'R':
         assert isinstance(other, R)
@@ -132,12 +134,13 @@ class R:
     def __call__(self, *other_l) -> 'R':
         if not other_l:
             return
-        cursor = self
+        self_clone = self.clone()
+        cursor = self_clone
         for other in other_l:
             assert cursor.next_r is None and isinstance(other, R)
             cursor.next_r = other
             cursor = other
-        return R(self)
+        return R(self_clone)
 
     def __repr__(self):
         s = str(self.target_rule)
@@ -270,6 +273,12 @@ class R:
             if is_l(response):
                 result_l.extend(response)
         return result_l
+
+    def clone(self) -> 'R':
+        matcher = copy(self)
+        if matcher.is_matcher:
+            matcher.fa_l = []
+        return matcher
 
 
 if __name__ == '__main__':
