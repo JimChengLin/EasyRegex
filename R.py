@@ -12,6 +12,9 @@ class Result:
         if isinstance(other, Result):
             return self.epoche == other.epoche and self.ed == other.ed
 
+    def __repr__(self):
+        return 'Rs' + str((self.epoche, self.ed))
+
 
 def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
@@ -309,10 +312,19 @@ if __name__ == '__main__':
         assert matcher.match('cdabcd') == [Result(0, 0, 2), Result(3, 4, 6), Result(4, 4, 6)]
 
 
+    def test_ab_c_star_c_plus():
+        _ = R
+        matcher = _('ab')(_('c', '*'))
+        assert str(matcher.match('abcccc')) == '[Rs(0, 2), Rs(0, 3), Rs(0, 4), Rs(0, 5), Rs(0, 6)]'
+        matcher = _('ab')(_('c', '+'))
+        assert str(matcher.match('abcccc')) == '[Rs(0, 3), Rs(0, 4), Rs(0, 5), Rs(0, 6)]'
+
+
     for func in (test_str,
                  test_abc,
                  test_abcda,
                  test_abc_bbc,
                  test_b_2_cd,
-                 test_optional_abc_bc):
+                 test_optional_abc_bc,
+                 test_ab_c_star_c_plus,):
         func()
