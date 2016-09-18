@@ -13,7 +13,7 @@ class Result:
             return self.epoche == other.epoche and self.ed == other.ed
 
     def __repr__(self):
-        return 'Rs' + str((self.epoche, self.ed))
+        return 'FT' + str((self.epoche, self.ed))
 
 
 def make_gen(target: str, num: tuple) -> callable:
@@ -51,7 +51,7 @@ def make_gen(target: str, num: tuple) -> callable:
                     if counter < to_num:
                         inner_gen = gen(epoche, ed, nth)
                         next(inner_gen)
-                    else:
+                    elif counter == to_num:
                         yield echo
                 curr_state = echo
             yield 'NO'
@@ -106,6 +106,7 @@ class R:
 
         self.next_r = None
         self.sibling_l = []
+        self.invert = False
 
         if self.is_matcher:
             self.fa_l = []
@@ -127,7 +128,7 @@ class R:
         assert isinstance(other, R)
 
     def __invert__(self) -> 'R':
-        pass
+        self.invert = not self.invert
 
     def __call__(self, *other_l) -> 'R':
         if not other_l:
@@ -145,7 +146,7 @@ class R:
         def s_group() -> str:
             return '[' + s + ']'
 
-        def did_s_group() -> bool:
+        def do_s_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
         if self.sibling_l:
@@ -154,7 +155,7 @@ class R:
 
         num_str = str_n(self.num)
         if num_str:
-            if len(s) > 1 and not did_s_group():
+            if len(s) > 1 and not do_s_group():
                 s = s_group()
             s += num_str
         if self.next_r is not None:
@@ -167,7 +168,7 @@ class R:
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
-        result_l = []
+        active_result = []
         # 传递char给自身
         if self.is_matcher:
             # 状态
@@ -189,7 +190,7 @@ class R:
                 self.fa_l = next_fa_l
 
             if state['Result']:
-                result_l.extend(state['Result'])
+                active_result.extend(state['Result'])
                 this_result = state['Result']
             elif state['GO']:
                 this_result = 'GO'
@@ -200,7 +201,8 @@ class R:
         else:
             this_result = self.target_rule.broadcast(char)
             if is_l(this_result):
-                filter_this_result = []
+                filter_result = []
+                # 有效区间
                 from_num, to_num = self.num
                 for result in this_result:
                     result.nth += 1
@@ -208,34 +210,34 @@ class R:
                         self.active(result)
                     if from_num <= result.nth <= to_num:
                         result.nth = 0
-                        filter_this_result.append(result)
-                this_result = filter_this_result
+                        filter_result.append(result)
+                this_result = filter_result
                 if this_result:
-                    result_l.extend(this_result)
+                    active_result.extend(this_result)
                 else:
                     this_result = 'GO'
 
         # 传递char给sibling
         for sibling in self.sibling_l:
-            another_result = sibling.broadcast(char)
-            if is_l(another_result):
-                result_l.extend(another_result)
+            sibling_result = sibling.broadcast(char)
+            if is_l(sibling_result):
+                active_result.extend(sibling_result)
                 if is_l(this_result):
-                    this_result.extend(another_result)
+                    this_result.extend(sibling_result)
                 else:
-                    this_result = another_result
-            elif another_result == 'GO' and this_result == 'NO':
+                    this_result = sibling_result
+            elif sibling_result == 'GO' and this_result == 'NO':
                 this_result = 'GO'
 
         # 激活下级
         if self.next_r:
-            for result in result_l:
+            for result in active_result:
                 self.next_r.active(result)
             if self.next_r.num[0] == 0 and self.next_r.next_r is None:
                 if is_l(that_result):
-                    that_result.extend(result_l)
+                    that_result.extend(active_result)
                 else:
-                    that_result = result_l
+                    that_result = active_result
 
         if that_result is None and is_l(this_result):
             return this_result
@@ -265,9 +267,9 @@ class R:
         result_l = []
         for i, char in enumerate(resource):
             self.active(Result(i, i, i))
-            res = self.broadcast(char)
-            if is_l(res):
-                result_l.extend(res)
+            response = self.broadcast(char)
+            if is_l(response):
+                result_l.extend(response)
         return result_l
 
 
@@ -315,9 +317,9 @@ if __name__ == '__main__':
     def test_ab_c_star_c_plus():
         _ = R
         matcher = _('ab')(_('c', '*'))
-        assert str(matcher.match('abcccc')) == '[Rs(0, 2), Rs(0, 3), Rs(0, 4), Rs(0, 5), Rs(0, 6)]'
+        assert str(matcher.match('abcccc')) == '[FT(0, 2), FT(0, 3), FT(0, 4), FT(0, 5), FT(0, 6)]'
         matcher = _('ab')(_('c', '+'))
-        assert str(matcher.match('abcccc')) == '[Rs(0, 3), Rs(0, 4), Rs(0, 5), Rs(0, 6)]'
+        assert str(matcher.match('abcccc')) == '[FT(0, 3), FT(0, 4), FT(0, 5), FT(0, 6)]'
 
 
     for func in (test_str,
