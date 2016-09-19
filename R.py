@@ -172,8 +172,6 @@ class R:
 
         if self.demand_r:
             s += '&' + str(self.demand_r)
-            if self.next_r and self.next_r.demand_r is None:
-                s = s_group()
         if self.sibling_l:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
             s = s_group()
@@ -184,6 +182,8 @@ class R:
                 s = s_group()
             s += num_str
         if self.next_r is not None:
+            if not do_s_group() and (self.demand_r or (not self.is_matcher and self.target_rule.demand_r)):
+                s = s_group()
             s += str(self.next_r)
         return s
 
@@ -381,7 +381,7 @@ if __name__ == '__main__':
 
     def test_abc_and_abc():
         _ = R
-        matcher = (_('abc') & _('abc') & _('abc'))(_('d'))
+        matcher = _(_('abc') & _('abc') & _('abc'))(_('d'))
         assert str(matcher) == '[abc&abc&abc]d'
         assert str(matcher.match('abcd')) == '[FT(0, 4)]'
 
