@@ -17,7 +17,7 @@ class Result:
             return self.epoche == other.epoche and self.ed == other.ed
 
     def __repr__(self):
-        return 'FT' + str((self.epoche, self.ed))
+        return 'FT({}, {})'.format(self.epoche, self.ed)
 
 
 def make_gen(target: str, num: tuple) -> callable:
@@ -123,6 +123,10 @@ class R:
     def is_matcher(self) -> bool:
         return isinstance(self.target_rule, str)
 
+    @property
+    def is_wrapper(self) -> bool:
+        return isinstance(self.target_rule, R)
+
     def __and__(self, other) -> 'R':
         assert isinstance(other, R)
         other = other.clone()
@@ -143,15 +147,12 @@ class R:
         self_clone.sibling_l.append(other)
         return self_clone
 
-    def __xor__(self, other) -> 'R':
-        assert isinstance(other, R)
-
     def __invert__(self) -> 'R':
         pass
 
     def __call__(self, *other_l) -> 'R':
         if not other_l:
-            return
+            return self
         self_clone = self.clone()
         cursor = self_clone
         for other in other_l:
@@ -182,7 +183,7 @@ class R:
                 s = s_group()
             s += num_str
         if self.next_r is not None:
-            if not do_s_group() and (self.demand_r or (not self.is_matcher and self.target_rule.demand_r)):
+            if not do_s_group() and (self.demand_r or (self.is_wrapper and self.target_rule.demand_r)):
                 s = s_group()
             s += str(self.next_r)
         return s
@@ -193,7 +194,7 @@ class R:
         if self.next_r:
             that_result = self.next_r.broadcast(char)
 
-        active_result = []
+        seed_result = []
         # 传递char给自身
         if self.is_matcher:
             # 状态
@@ -215,7 +216,7 @@ class R:
                 self.fa_l = fa_l
 
             if state['Result']:
-                active_result.extend(state['Result'])
+                seed_result.extend(state['Result'])
                 this_result = state['Result']
             elif state['GO']:
                 this_result = 'GO'
@@ -238,7 +239,7 @@ class R:
                         filter_result.append(res)
                 this_result = filter_result
                 if this_result:
-                    active_result.extend(this_result)
+                    seed_result.extend(this_result)
                 else:
                     this_result = 'GO'
 
@@ -264,7 +265,7 @@ class R:
         for sibling in self.sibling_l:
             sibling_result = sibling.broadcast(char)
             if is_l(sibling_result):
-                active_result.extend(sibling_result)
+                seed_result.extend(sibling_result)
                 if is_l(this_result):
                     this_result.extend(sibling_result)
                 else:
@@ -274,13 +275,13 @@ class R:
 
         # 激活下级
         if self.next_r:
-            for res in active_result:
+            for res in seed_result:
                 self.next_r.active(res)
             if self.next_r.num[0] == 0 and self.next_r.next_r is None:
                 if is_l(that_result):
-                    that_result.extend(active_result)
+                    that_result.extend(seed_result)
                 else:
-                    that_result = active_result
+                    that_result = seed_result
 
         if that_result is None and is_l(this_result):
             return this_result
