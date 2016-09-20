@@ -5,8 +5,8 @@ NULL = '\00'
 
 
 class Result:
-    def __init__(self, epoche: int, op: int, ed: int, nth=0, prev_str='', table: dict = None):
-        self.epoche = epoche
+    def __init__(self, epoch: int, op: int, ed: int, nth=0, prev_str='', table: dict = None):
+        self.epoch = epoch
         self.op = op
         self.ed = ed
         self.nth = nth
@@ -15,16 +15,16 @@ class Result:
 
     def __eq__(self, other):
         if isinstance(other, Result):
-            return self.epoche == other.epoche and self.ed == other.ed
+            return self.epoch == other.epoch and self.ed == other.ed
 
     def __repr__(self):
-        return 'FT({}, {})'.format(self.epoche, self.ed)
+        return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self.table is None else str(self.table))
 
 
 def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoche: int, op: int, nth: int, record: bool, table: dict) -> iter:
+    def gen(epoch: int, op: int, nth: int, record: bool, table: dict) -> iter:
         ed = op
         prev_str = ''
         for expect_char in target:
@@ -35,16 +35,16 @@ def make_gen(target: str, num: tuple) -> callable:
                 ed += 1
             else:
                 yield 'NO'
-        yield Result(epoche, op, ed, nth, prev_str, table)
+        yield Result(epoch, op, ed, nth, prev_str, table)
         yield 'NO'
 
     if num[-1] == 1:
         return gen
     else:
-        def decorate_g(epoche: int, op: int, nth: int, record: bool, table: dict) -> iter:
+        def decorate_g(epoch: int, op: int, nth: int, record: bool, table: dict) -> iter:
             counter = 0
             from_num, to_num = num
-            inner_gen = gen(epoche, op, nth, record, table)
+            inner_gen = gen(epoch, op, nth, record, table)
             next(inner_gen)
             curr_state = 'GO'
 
@@ -57,7 +57,7 @@ def make_gen(target: str, num: tuple) -> callable:
                     if counter < from_num:
                         echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoche, ed, nth, record, table)
+                        inner_gen = gen(epoch, ed, nth, record, table)
                         next(inner_gen)
                     elif counter == to_num:
                         yield echo
@@ -248,13 +248,13 @@ class R:
             filter_result = []
             for res in this_result:
                 demand_result = None
-                self.demand_r.active(Result(res.epoche, res.op, res.op))
+                self.demand_r.active(Result(res.epoch, res.op, res.op))
                 for char in res.prev_str:
                     demand_result = self.demand_r.broadcast(char)
                 self.demand_r.broadcast(NULL)
                 if is_l(demand_result):
                     for demand_res in demand_result:
-                        if demand_res.epoche == res.epoche and demand_res.ed == res.ed:
+                        if demand_res.epoch == res.epoch and demand_res.ed == res.ed:
                             filter_result.append(res)
                             break
             if filter_result:
@@ -279,10 +279,7 @@ class R:
             for res in this_result:
                 if res.table is None:
                     res.table = {}
-                if self.name not in res.table:
-                    res.table[self.name] = [res]
-                else:
-                    res.table[self.name].append(res)
+                res.table.setdefault(self.name, []).append(Result(res.epoch, res.op, res.ed))
 
         # 激活下级
         if self.next_r:
@@ -306,7 +303,7 @@ class R:
 
     def active(self, prev_result: Result, record=False):
         if self.is_matcher:
-            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, record or bool(self.demand_r),
+            fa = self.gen(prev_result.epoch, prev_result.ed, prev_result.nth, record or bool(self.demand_r),
                           prev_result.table)
             next(fa)
             self.fa_l.append(fa)
@@ -329,6 +326,7 @@ class R:
         return res_l
 
     def clone(self) -> 'R':
+        # todo
         matcher = copy(self)
         if matcher.next_r:
             matcher.next_r = matcher.next_r.clone()
@@ -399,6 +397,14 @@ if __name__ == '__main__':
         assert str(matcher.match('abcd')) == '[FT(0, 4)]'
 
 
+    def test_b_2_cd_counter():
+        _ = R
+        matcher = _('b', '{1,2}', '@b')(_('cd'))
+        print(matcher.match('bbcda'))
+        matcher = _(_('b'), '{2}', '@b')(_('cd'))
+        print(matcher.match('bbcda'))
+
+
     for func in (
             test_str,
             test_abc,
@@ -408,5 +414,6 @@ if __name__ == '__main__':
             test_optional_abc_bc,
             test_ab_c_star_c_plus,
             test_abc_and_abc,
+            test_b_2_cd_counter,
     ):
         func()
