@@ -82,12 +82,14 @@ def parse_n(num) -> tuple:
             return 0, inf
         if num == '+':
             return 1, inf
-        assert num.startswith('{') and num.endswith('}')
-        num = num[1:-1]
-        num = tuple(map(int, num.split(',')))
-        if len(num) == 1:
-            num *= 2
-        return num
+        if num.startswith('{') and num.endswith('}'):
+            num = num[1:-1]
+            num = tuple(map(int, num.split(',')))
+            if len(num) == 1:
+                num *= 2
+            return num
+        if num.startswith('@'):
+            return num, num
     raise Exception
 
 
@@ -273,7 +275,7 @@ class R:
             elif sibling_result == 'GO' and this_result == 'NO':
                 this_result = 'GO'
 
-        # 标记
+        # 命名
         if self.name is not None and is_l(this_result):
             for res in this_result:
                 if res.table is None:
