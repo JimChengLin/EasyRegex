@@ -43,11 +43,19 @@ def make_gen(target: str, num: tuple) -> callable:
         def decorate_g(epoch: int, op: int, nth: int, record: bool, table: dict) -> iter:
             counter = 0
             from_num, to_num = num
+            if isinstance(from_num, str):
+                from_num = to_num = len(table.get(from_num, ()))
+                if from_num == 0:
+                    yield Result(epoch, op, op, nth, '', table)
+                    yield 'NO'
+
             inner_gen = gen(epoch, op, nth, record, table)
             next(inner_gen)
             curr_state = 'GO'
 
             while counter < to_num:
+                if isinstance(curr_state, Result):
+                    curr_state.op = op
                 recv_char = yield curr_state
                 echo = inner_gen.send(recv_char)
                 if isinstance(echo, Result):
@@ -59,6 +67,8 @@ def make_gen(target: str, num: tuple) -> callable:
                         inner_gen = gen(epoch, ed, nth, record, table)
                         next(inner_gen)
                     elif counter == to_num:
+                        if isinstance(echo, Result):
+                            echo.op = op
                         yield echo
                 curr_state = echo
             yield 'NO'
@@ -280,7 +290,7 @@ class R:
             for res in this_result:
                 if res.table is None:
                     res.table = {}
-                res.table[self.name] = Result(res.epoch, res.op, res.ed)
+                res.table.setdefault(self.name, []).append((res.op, res.ed))
 
         # 激活下级
         if self.next_r:
@@ -394,21 +404,23 @@ if __name__ == '__main__':
 
     def test_b_2_cd_counter():
         _ = R
-        matcher = _('b', '{1,2}', '@b')(_('cd'))
-        print(matcher.match('bbcda'))
-        matcher = _(_('b'), '{2}', '@b')(_('cd'))
-        print(matcher.match('bbcda'))
+        # matcher = _('b', '{1,2}', '@b')(_('cd'))
+        # print(matcher.match('bbcda'))
+        # matcher = _(_('b'), '{2}', '@b')(_('cd'))
+        # print(matcher.match('bbcda'))
+        matcher = _(_('b'), '{2}', '@b')(_('cd', '@b'))
+        print(matcher.match('bbcdcd'))
 
 
     for func in (
-            test_str,
-            test_abc,
-            test_abcda,
-            test_abc_bbc,
-            test_b_2_cd,
-            test_optional_abc_bc,
-            test_ab_c_star_c_plus,
-            test_abc_and_abc,
+            # test_str,
+            # test_abc,
+            # test_abcda,
+            # test_abc_bbc,
+            # test_b_2_cd,
+            # test_optional_abc_bc,
+            # test_ab_c_star_c_plus,
+            # test_abc_and_abc,
             test_b_2_cd_counter,
     ):
         func()
