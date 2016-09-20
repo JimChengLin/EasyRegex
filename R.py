@@ -5,12 +5,13 @@ NULL = '\00'
 
 
 class Result:
-    def __init__(self, epoche: int, op: int, ed: int, nth=0, prev_str=''):
+    def __init__(self, epoche: int, op: int, ed: int, nth=0, prev_str='', table: dict = None):
         self.epoche = epoche
         self.op = op
         self.ed = ed
         self.nth = nth
         self.prev_str = prev_str
+        self.table = table
 
     def __eq__(self, other):
         if isinstance(other, Result):
@@ -23,7 +24,7 @@ class Result:
 def make_gen(target: str, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoche: int, op: int, nth: int, record: bool) -> iter:
+    def gen(epoche: int, op: int, nth: int, record: bool, table: dict) -> iter:
         ed = op
         prev_str = ''
         for expect_char in target:
@@ -34,16 +35,16 @@ def make_gen(target: str, num: tuple) -> callable:
                 ed += 1
             else:
                 yield 'NO'
-        yield Result(epoche, op, ed, nth, prev_str)
+        yield Result(epoche, op, ed, nth, prev_str, table)
         yield 'NO'
 
     if num[-1] == 1:
         return gen
     else:
-        def decorate_g(epoche: int, op: int, nth: int, record: bool) -> iter:
+        def decorate_g(epoche: int, op: int, nth: int, record: bool, table: dict) -> iter:
             counter = 0
             from_num, to_num = num
-            inner_gen = gen(epoche, op, nth, record)
+            inner_gen = gen(epoche, op, nth, record, table)
             next(inner_gen)
             curr_state = 'GO'
 
@@ -56,7 +57,7 @@ def make_gen(target: str, num: tuple) -> callable:
                     if counter < from_num:
                         echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoche, ed, nth, record)
+                        inner_gen = gen(epoche, ed, nth, record, table)
                         next(inner_gen)
                     elif counter == to_num:
                         yield echo
@@ -273,6 +274,16 @@ class R:
             elif sibling_result == 'GO' and this_result == 'NO':
                 this_result = 'GO'
 
+        # 标记
+        if self.name is not None and is_l(this_result):
+            for res in this_result:
+                if res.table is None:
+                    res.table = {}
+                if self.name not in res.table:
+                    res.table[self.name] = [res]
+                else:
+                    res.table[self.name].append(res)
+
         # 激活下级
         if self.next_r:
             for res in seed_result:
@@ -295,7 +306,8 @@ class R:
 
     def active(self, prev_result: Result, record=False):
         if self.is_matcher:
-            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, record or bool(self.demand_r))
+            fa = self.gen(prev_result.epoche, prev_result.ed, prev_result.nth, record or bool(self.demand_r),
+                          prev_result.table)
             next(fa)
             self.fa_l.append(fa)
         else:
