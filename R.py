@@ -1,4 +1,3 @@
-from copy import copy
 from math import inf
 
 NULL = '\00'
@@ -279,7 +278,7 @@ class R:
             for res in this_result:
                 if res.table is None:
                     res.table = {}
-                res.table.setdefault(self.name, []).append(Result(res.epoch, res.op, res.ed))
+                res.table[self.name] = Result(res.epoch, res.op, res.ed)
 
         # 激活下级
         if self.next_r:
@@ -326,18 +325,12 @@ class R:
         return res_l
 
     def clone(self) -> 'R':
-        # todo
-        matcher = copy(self)
-        if matcher.next_r:
-            matcher.next_r = matcher.next_r.clone()
-        if matcher.demand_r:
-            matcher.demand_r = matcher.demand_r.clone()
-        matcher.sibling_l = [i.clone() for i in matcher.sibling_l]
-
-        if matcher.is_matcher:
-            matcher.fa_l = []
-        else:
-            matcher.target_rule = matcher.target_rule.clone()
+        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num, self.name)
+        if self.next_r:
+            matcher.next_r = self.next_r.clone()
+        if self.demand_r:
+            matcher.demand_r = self.demand_r.clone()
+        matcher.sibling_l.extend(i.clone() for i in self.sibling_l)
         return matcher
 
 
