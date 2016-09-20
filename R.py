@@ -17,7 +17,7 @@ class Result:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def __repr__(self):
-        capture_table = None
+        capture_table = ''
         if self.table:
             capture_table = {}
             for group in self.table:
@@ -51,9 +51,8 @@ def make_gen(target: str, num: tuple) -> callable:
             from_num, to_num = num
             if isinstance(from_num, str):
                 from_num = to_num = len(table.get(from_num, ()))
-                if from_num == 0:
-                    yield Result(epoch, op, op, nth, '', table)
-                    yield 'NO'
+                yield
+                yield 'NO'
 
             inner_gen = gen(epoch, op, nth, record, table)
             next(inner_gen)
@@ -307,6 +306,10 @@ class R:
         if self.next_r:
             for res in seed_result:
                 self.next_r.active(res)
+                # todo: 动态区间
+                if self.next_r and isinstance(self.next_r.num[0], str):
+                    pass
+
             if self.next_r.num[0] == 0 and self.next_r.next_r is None:
                 if is_l(that_result):
                     that_result.extend(seed_result)
@@ -424,14 +427,14 @@ if __name__ == '__main__':
 
 
     for func in (
-            # test_str,
-            # test_abc,
-            # test_abcda,
-            # test_abc_bbc,
-            # test_b_2_cd,
-            # test_optional_abc_bc,
-            # test_ab_c_star_c_plus,
-            # test_abc_and_abc,
+            test_str,
+            test_abc,
+            test_abcda,
+            test_abc_bbc,
+            test_b_2_cd,
+            test_optional_abc_bc,
+            test_ab_c_star_c_plus,
+            test_abc_and_abc,
             test_b_2_cd_counter,
     ):
         func()
