@@ -17,7 +17,13 @@ class Result:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def __repr__(self):
-        return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self.table is None else str(self.table))
+        capture_table = None
+        if self.table:
+            capture_table = {}
+            for group in self.table:
+                if group.startswith('@'):
+                    capture_table[group] = list(map(lambda t: (self.table['#' + group], t[1]), self.table[group]))
+        return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self.table is None else str(capture_table))
 
 
 def make_gen(target: str, num: tuple) -> callable:
@@ -243,6 +249,11 @@ class R:
                 # 有效区间
                 from_num, to_num = self.num
                 for res in this_result:
+                    if not res.table:
+                        res.table = {}
+                    if self.name and '#' + self.name not in res.table:
+                        res.table['#' + self.name] = res.op
+
                     res.nth += 1
                     if res.nth < to_num:
                         self.active(res)
