@@ -29,22 +29,33 @@ class Result:
         return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self.table is None else str(capture_table))
 
 
-def make_gen(target: str, num: tuple) -> callable:
+def make_gen(target, num: tuple) -> callable:
     # 识别target的生成器
     # 生成器 -> FA
-    def gen(epoch: int, op: int, nth: int, record: bool, table: dict) -> iter:
-        ed = op
-        prev_str = ''
-        for expect_char in target:
+    if isinstance(target, str):
+        def gen(epoch: int, op: int, nth: int, record: bool, table: dict) -> iter:
+            ed = op
+            prev_str = ''
+            for expect_char in target:
+                recv_char = yield 'GO'
+                if record:
+                    prev_str += recv_char
+                if recv_char == expect_char:
+                    ed += 1
+                else:
+                    yield 'NO'
+            yield Result(epoch, op, ed, nth, prev_str, table)
+            yield 'NO'
+    elif callable(target):
+        def gen(epoch: int, op: int, nth: int, _: bool, table: dict) -> iter:
             recv_char = yield 'GO'
-            if record:
-                prev_str += recv_char
-            if recv_char == expect_char:
-                ed += 1
+            if target(recv_char):
+                yield Result(epoch, op, op + 1, nth, recv_char, table)
             else:
                 yield 'NO'
-        yield Result(epoch, op, ed, nth, prev_str, table)
-        yield 'NO'
+            yield 'NO'
+    else:
+        raise Exception
 
     if num[-1] == 1:
         return gen
@@ -138,7 +149,7 @@ class R:
 
     @property
     def is_matcher(self) -> bool:
-        return isinstance(self.target_rule, str)
+        return isinstance(self.target_rule, str) or (not isinstance(self.target_rule, R) and callable(self.target_rule))
 
     @property
     def is_wrapper(self) -> bool:
@@ -424,6 +435,12 @@ if __name__ == '__main__':
         assert str(matcher.match('bbcdcd')) == "[FT(1, 4){'@b': [(1, 2)]}, FT(0, 6){'@b': [(0, 1), (0, 2)]}]"
 
 
+    def test_letter_123():
+        _ = R
+        matcher = _(str.isalpha, '*')(_('123'))
+        print(matcher.match('atfgy123a'))
+
+
     for func in (
             test_str,
             test_abc,
@@ -434,5 +451,6 @@ if __name__ == '__main__':
             test_ab_c_star_c_plus,
             test_abc_and_abc,
             test_b_2_cd_counter,
+            test_letter_123,
     ):
         func()
