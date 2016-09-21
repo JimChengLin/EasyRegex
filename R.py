@@ -3,6 +3,8 @@ from math import inf
 NULL = '\00'
 
 
+# todo: 0的动态区间, 函数参数, invert, xor
+
 class Result:
     def __init__(self, epoch: int, op: int, ed: int, nth=0, prev_str='', table: dict = None):
         self.epoch = epoch
@@ -22,7 +24,8 @@ class Result:
             capture_table = {}
             for group in self.table:
                 if group.startswith('@'):
-                    capture_table[group] = list(map(lambda t: (self.table['#' + group], t[1]), self.table[group]))
+                    capture_table[group] = list(
+                        map(lambda t: (self.table.get('#' + group, t[0]), t[1]), self.table[group]))
         return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self.table is None else str(capture_table))
 
 
@@ -51,9 +54,6 @@ def make_gen(target: str, num: tuple) -> callable:
             from_num, to_num = num
             if isinstance(from_num, str):
                 from_num = to_num = len(table.get(from_num, ()))
-                yield
-                yield 'NO'
-
             inner_gen = gen(epoch, op, nth, record, table)
             next(inner_gen)
             curr_state = 'GO'
@@ -306,10 +306,6 @@ class R:
         if self.next_r:
             for res in seed_result:
                 self.next_r.active(res)
-                # todo: 动态区间
-                if self.next_r and isinstance(self.next_r.num[0], str):
-                    pass
-
             if self.next_r.num[0] == 0 and self.next_r.next_r is None:
                 if is_l(that_result):
                     that_result.extend(seed_result)
@@ -418,12 +414,14 @@ if __name__ == '__main__':
 
     def test_b_2_cd_counter():
         _ = R
-        # matcher = _('b', '{1,2}', '@b')(_('cd'))
-        # print(matcher.match('bbcda'))
-        # matcher = _(_('b'), '{2}', '@b')(_('cd'))
-        # print(matcher.match('bbcda'))
+        matcher = _('b', '{1,2}', '@b')(_('cd'))
+        assert str(matcher.match('bbcda')) == "[FT(0, 4){'@b': [(0, 2)]}, FT(1, 4){'@b': [(1, 2)]}]"
+        matcher = _(_('b'), '{2}', '@b')(_('cd'))
+        assert str(matcher.match('bbcda')) == "[FT(0, 4){'@b': [(0, 2)]}]"
         matcher = _(_('b'), '{2}', '@b')(_('cd', '@b'))
-        print(matcher.match('bbcdcd'))
+        assert str(matcher.match('bbcdcd')) == "[FT(0, 4){'@b': [(0, 2)]}]"
+        matcher = _(_('b'), '+', '@b')(_('cd', '@b'))
+        assert str(matcher.match('bbcdcd')) == "[FT(1, 4){'@b': [(1, 2)]}, FT(0, 6){'@b': [(0, 1), (0, 2)]}]"
 
 
     for func in (
