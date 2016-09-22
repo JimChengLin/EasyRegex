@@ -3,7 +3,7 @@ from math import inf
 NULL = '\00'
 
 
-# todo: 0的动态区间, 函数参数, invert, xor
+# todo: 0的动态区间 => active 返回值, 函数参数 => 架构改变, invert => Result, xor => Result
 
 class Result:
     def __init__(self, epoch: int, op: int, ed: int, nth=0, prev_str='', table: dict = None):
