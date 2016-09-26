@@ -229,7 +229,7 @@ class R:
             if self.sibling_l:
                 s += '|' + '|'.join(str(i) for i in self.sibling_l)
                 s = group()
-            if self.next_r and not is_group() and (self.demand_r or (self.is_wrapper and self.target_rule.demand_r)):
+            if (self.demand_r or (self.is_wrapper and self.target_rule.demand_r)) and self.next_r and not is_group():
                 s = group()
 
         num_str = str_n(self.num)
