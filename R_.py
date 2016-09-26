@@ -77,7 +77,7 @@ def make_gen(target, num: tuple) -> callable:
                 from_num = to_num = len(table.get(from_num, ()))
             elif callable(from_num):
                 from_num, to_num = from_num(epoch, op, table), to_num(epoch, op, table)
-            assert from_num <= to_num
+            assert 0 <= from_num <= to_num
             curr_state = Success(epoch, op, table.copy()) if from_num == 0 else 'GO'
             if to_num == 0:
                 yield curr_state
@@ -89,13 +89,14 @@ def make_gen(target, num: tuple) -> callable:
                 echo = inner_gen.send(recv_char)
                 if isinstance(echo, Success):
                     counter += 1
+                    ed = echo.ed
+                    if counter < from_num:
+                        echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoch, echo.ed, table)
+                        inner_gen = gen(epoch, ed, table)
                         next(inner_gen)
                     elif counter == to_num:
                         yield echo
-                    if counter < from_num:
-                        echo = 'GO'
                 curr_state = echo
             yield 'NO'
 
@@ -109,7 +110,7 @@ def is_l(obj) -> bool:
 def parse_n(num) -> tuple:
     if num is None:
         return 1, 1
-    if isinstance(num, int):
+    if isinstance(num, int) or callable(num):
         return num, num
     if isinstance(num, tuple):
         return num
@@ -118,14 +119,14 @@ def parse_n(num) -> tuple:
             return 0, inf
         if num == '+':
             return 1, inf
+        if num.startswith('@'):
+            return num, num
         if num.startswith('{') and num.endswith('}'):
             num = num[1:-1]
             num = tuple(map(int, num.split(',')))
             if len(num) == 1:
                 num *= 2
             return num
-        if num.startswith('@'):
-            return num, num
     raise Exception
 
 
