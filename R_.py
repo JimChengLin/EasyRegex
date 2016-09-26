@@ -212,9 +212,12 @@ class R:
 
     def clone(self) -> 'R':
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num, self.name)
-        if self.next_r:
-            matcher.next_r = self.next_r.clone()
         if self.demand_r:
             matcher.demand_r = self.demand_r.clone()
         matcher.sibling_l.extend(i.clone() for i in self.sibling_l)
+        if self.xor_r:
+            matcher.xor_r = self.xor_r.clone()
+        matcher.invert = self.invert
+        if self.next_r:
+            matcher.next_r = self.next_r.clone()
         return matcher
