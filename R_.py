@@ -15,12 +15,12 @@ class Result:
 
     @property
     def capture_record(self) -> dict:
-        if self._table:
+        if self._table is not None:
             record = {}
             for k in self._table:
-                if k.startswith('@'):
-                    record[k] = [(self._table.get(k[1:], i[0]), i[1]) for i in self._table[k]]
-                    record[k] = list(map(lambda t: (self._table.get(k[1:], t[0]), t[1]), self._table[k]))
+                if k.startswith('@'):  # capture记号
+                    # OP可能存在于'_{k}'
+                    record[k] = [(self._table.get('_' + k, i[0]), i[1]) for i in self._table[k]]
             return record
 
     def __eq__(self, other):
@@ -28,8 +28,4 @@ class Result:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def __repr__(self):
-        capture = ''
-        if self._table:
-            capture_record = {}
-            for key in self._table:
-                pass
+        return 'FT({}, {})'.format(self.epoch, self.ed) + ('' if self._table is None else str(self.capture_record))
