@@ -220,9 +220,9 @@ class R:
             return s.startswith('[') and s.endswith(']')
 
         if self.xor_r:
-            pass
+            s = '[{}^{}]'.format(s, self.xor_r)
         elif self.invert:
-            pass
+            s = '~[{}]'.format(s)
         else:
             if self.demand_r:
                 s += '&' + str(self.demand_r)
