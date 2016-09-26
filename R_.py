@@ -210,6 +210,37 @@ class R:
             cursor = other
         return R(self_clone)
 
+    def __repr__(self):
+        s = str(self.target_rule)
+
+        def group() -> str:
+            return '[' + s + ']'
+
+        def is_group() -> bool:
+            return s.startswith('[') and s.endswith(']')
+
+        if self.xor_r:
+            pass
+        elif self.invert:
+            pass
+        else:
+            if self.demand_r:
+                s += '&' + str(self.demand_r)
+            if self.sibling_l:
+                s += '|' + '|'.join(str(i) for i in self.sibling_l)
+                s = group()
+            if self.next_r and not is_group() and (self.demand_r or (self.is_wrapper and self.target_rule.demand_r)):
+                s = group()
+
+        num_str = str_n(self.num)
+        if num_str:
+            if len(s) > 1 and not is_group():
+                s = group()
+            s += num_str
+        if self.next_r:
+            s += str(self.next_r)
+        return s
+
     def clone(self) -> 'R':
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num, self.name)
         if self.demand_r:

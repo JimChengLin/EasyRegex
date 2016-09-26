@@ -205,14 +205,16 @@ class R:
             s += '|' + '|'.join(str(i) for i in self.sibling_l)
             s = s_group()
 
+        if self.next_r and not do_s_group() and (
+                    self.demand_r or (self.is_wrapper and self.target_rule.demand_r)):
+            s = s_group()
+
         num_str = str_n(self.num)
         if num_str:
             if len(s) > 1 and not do_s_group():
                 s = s_group()
             s += num_str
         if self.next_r is not None:
-            if not do_s_group() and (self.demand_r or (self.is_wrapper and self.target_rule.demand_r)):
-                s = s_group()
             s += str(self.next_r)
         return s
 
