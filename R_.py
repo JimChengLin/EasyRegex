@@ -133,8 +133,8 @@ def parse_n(num) -> tuple:
 def str_n(num: tuple) -> str:
     from_num, to_num = num
     if callable(from_num):
-        from_num = '<{}>'.format(from_num.__name__)
-        to_num = '<{}>'.format(to_num.__name__)
+        from_num = '<' + from_num.__name__ + '>'
+        to_num = '<' + to_num.__name__ + '>'
     if from_num == to_num:
         if from_num == 1:
             return ''
@@ -159,9 +159,8 @@ class R:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num)
 
-        # XOR INVERT
         self.xor_r = None
-        self.invert_r = None
+        self.invert = False
 
     @property
     def is_wrapper(self) -> bool:
@@ -171,8 +170,7 @@ class R:
     def is_matcher(self) -> bool:
         return not self.is_wrapper
 
-    def __and__(self, other) -> 'R':
-        assert isinstance(other, R)
+    def __and__(self, other: 'R') -> 'R':
         other = other.clone()
         self_clone = self.clone()
         if self_clone.sibling_l:
@@ -184,18 +182,21 @@ class R:
         cursor.demand_r = other
         return self_clone
 
-    def __or__(self, other) -> 'R':
-        assert isinstance(other, R)
+    def __or__(self, other: 'R') -> 'R':
         other = other.clone()
         self_clone = self.clone()
         self_clone.sibling_l.append(other)
         return self_clone
 
-    def __xor__(self, other) -> 'R':
-        pass
+    def __xor__(self, other: 'R') -> 'R':
+        self_clone = R(self.clone())
+        self_clone.xor_r = other
+        return R(self_clone)
 
     def __invert__(self) -> 'R':
-        pass
+        self_clone = R(self.clone())
+        self_clone.invert = True
+        return R(self_clone)
 
     def __call__(self, *other_l) -> 'R':
         if not other_l:
@@ -203,8 +204,8 @@ class R:
         self_clone = self.clone()
         cursor = self_clone
         for other in other_l:
-            assert cursor.next_r is None and isinstance(other, R)
-            other = other.clone()
+            assert cursor.next_r is None
+            other = other.clone() if isinstance(other, R) else R(other)
             cursor.next_r = other
             cursor = other
         return R(self_clone)
