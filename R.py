@@ -76,16 +76,15 @@ def make_gen(target, num: tuple) -> callable:
                 echo = inner_gen.send(recv_char)
                 if isinstance(echo, Result):
                     counter += 1
-                    ed = echo.ed
-                    if counter < from_num:
-                        echo = 'GO'
                     if counter < to_num:
-                        inner_gen = gen(epoch, ed, nth, record, table)
+                        inner_gen = gen(epoch, echo.ed, nth, record, table)
                         next(inner_gen)
                     elif counter == to_num:
                         if isinstance(echo, Result):
                             echo.op = op
                         yield echo
+                    if counter < from_num:
+                        echo = 'GO'
                 curr_state = echo
             yield 'NO'
 

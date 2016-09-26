@@ -68,13 +68,35 @@ def make_gen(target, num: tuple) -> callable:
             from_num, to_num = num
             if isinstance(from_num, str):
                 from_num = to_num = len(table.get(from_num, ()))
+            curr_state = Success(epoch, op, table.copy()) if from_num == 0 else 'GO'
+            if to_num == 0:
+                yield curr_state
 
             inner_gen = gen(epoch, op, table, log)
             next(inner_gen)
-            curr_state = Result(epoch, op, table) if from_num == 0 else 'GO'
             while counter < to_num:
                 recv_char = yield curr_state
                 echo = inner_gen.send(recv_char)
 
-                if isinstance():
-                    pass
+                if isinstance(echo, Success):
+                    counter += 1
+                    if counter < to_num:
+                        inner_gen = gen(epoch, echo.ed, table)
+                        next(inner_gen)
+                    elif counter == to_num:
+                        yield echo
+                    if counter < from_num:
+                        echo = 'GO'
+                curr_state = echo
+            yield 'NO'
+
+        return decorate_g
+
+
+def is_l(obj) -> bool:
+    return isinstance(obj, list)
+
+
+def parse_n(num) -> tuple:
+    if num is None:
+        return 1, 1
