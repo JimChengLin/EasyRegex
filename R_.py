@@ -89,12 +89,11 @@ def make_gen(target, num: tuple) -> callable:
                 echo = inner_gen.send(recv_char)
                 if isinstance(echo, Success):
                     counter += 1
-                    ed = echo.ed
+                    if counter < to_num:
+                        inner_gen = gen(epoch, echo.ed, table)
+                        next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
-                    if counter < to_num:
-                        inner_gen = gen(epoch, ed, table)
-                        next(inner_gen)
                     elif counter == to_num:
                         yield echo
                 curr_state = echo
@@ -113,6 +112,7 @@ def parse_n(num) -> tuple:
     if isinstance(num, int) or callable(num):
         return num, num
     if isinstance(num, tuple):
+        assert isinstance(num[0], type(num[1]))
         return num
     if isinstance(num, str):
         if num == '*':
@@ -133,8 +133,8 @@ def parse_n(num) -> tuple:
 def str_n(num: tuple) -> str:
     from_num, to_num = num
     if callable(from_num):
-        from_num = '<' + from_num.__name__ + '>'
-        to_num = '<' + to_num.__name__ + '>'
+        from_num = '<{}>'.format(from_num.__name__)
+        to_num = '<{}>'.format(to_num.__name__)
     if from_num == to_num:
         if from_num == 1:
             return ''
@@ -163,12 +163,12 @@ class R:
         self.invert = False
 
     @property
-    def is_wrapper(self) -> bool:
-        return isinstance(self.target_rule, R)
-
-    @property
     def is_matcher(self) -> bool:
         return not self.is_wrapper
+
+    @property
+    def is_wrapper(self) -> bool:
+        return isinstance(self.target_rule, R)
 
     def __and__(self, other: 'R') -> 'R':
         other = other.clone()
