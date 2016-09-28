@@ -1,7 +1,7 @@
 from math import inf
 
 
-class Result:
+class Res:
     def __init__(self, epoch: int, ed: int, table: dict):
         self.epoch = epoch
         self.ed = ed
@@ -21,17 +21,17 @@ class Result:
         return 'FT({}, {}){}'.format(self.epoch, self.ed, record or '')
 
     def __eq__(self, other):
-        if isinstance(other, Result):
+        if isinstance(other, Res):
             return self.epoch == other.epoch and self.ed == other.ed
 
 
-class Success(Result):
+class Success(Res):
     def invert(self) -> 'Fail':
         self.__class__ = Fail
         return self
 
 
-class Fail(Result):
+class Fail(Res):
     def invert(self) -> 'Success':
         self.__class__ = Success
         return self
