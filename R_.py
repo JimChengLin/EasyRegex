@@ -1,4 +1,5 @@
 from math import inf
+from typing import Iterable, Callable
 
 
 class Res:
@@ -16,9 +17,14 @@ class Res:
                 record[k] = [(op, ed) for ed in self.table[k]]
         return record
 
+    def __getattr__(self, name: str):
+        return self.table[name]
+
+    def __setattr__(self, name: str, val):
+        self.table[name] = val
+
     def __repr__(self):
-        record = self.capture_record
-        return 'FT({}, {}){}'.format(self.epoch, self.ed, record or '')
+        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture_record or '')
 
     def __eq__(self, other):
         if isinstance(other, Res):
@@ -39,7 +45,7 @@ class Fail(Res):
 
 def make_gen(target, num: tuple) -> callable:
     # gen -> fa
-    if isinstance(target, str):
+    if isinstance(target, Iterable):
         def gen(epoch: int, op: int, table: dict, log: bool) -> iter:
             table = table.copy()
             ed = op
@@ -54,7 +60,7 @@ def make_gen(target, num: tuple) -> callable:
                     yield Fail(epoch, ed, table)
             yield Success(epoch, ed, table)
             yield 'NO'
-    elif callable(target):
+    elif isinstance(target, Callable):
         def gen(epoch: int, op: int, table: dict, log: bool) -> iter:
             table = table.copy()
             recv_char = yield 'GO'
