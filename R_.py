@@ -43,29 +43,28 @@ class Fail(Res):
         return self
 
 
-def make_gen(target, num: tuple) -> callable:
-    # gen -> fa
+def make_gen(target, num: tuple):  # -> fa
     if isinstance(target, Iterable):
-        def gen(epoch: int, op: int, table: dict, log: bool) -> iter:
+        def gen(epoch: int, op: int, table: dict, log: bool):
             table = table.copy()
             ed = op
             table['$prev_str'] = ''
-            for expect_char in target:
-                recv_char = yield 'GO'
+            for expect in target:
+                recv = yield 'GO'
                 if log:
-                    table['$prev_str'] += recv_char
-                if recv_char == expect_char:
+                    table['$prev_str'] += recv
+                if recv == expect:
                     ed += 1
                 else:
                     yield Fail(epoch, ed, table)
             yield Success(epoch, ed, table)
             yield 'NO'
     elif isinstance(target, Callable):
-        def gen(epoch: int, op: int, table: dict, log: bool) -> iter:
+        def gen(epoch: int, op: int, table: dict, log: bool):
             table = table.copy()
-            recv_char = yield 'GO'
-            table['$prev_str'] = recv_char if log else ''
-            if target(recv_char, (epoch, op, table)):
+            recv = yield 'GO'
+            table['$prev_str'] = recv if log else ''
+            if target(recv, (epoch, op, table)):
                 yield Success(epoch, op + 1, table)
             else:
                 yield Fail(epoch, op + 1, table)
@@ -76,12 +75,12 @@ def make_gen(target, num: tuple) -> callable:
     if num == (1, 1):
         return gen
     else:
-        def decorate_g(epoch: int, op: int, table: dict, log: bool) -> iter:
+        def decorate_g(epoch: int, op: int, table: dict, log: bool):
             counter = 0
             from_num, to_num = num
             if isinstance(from_num, str):
                 from_num = to_num = len(table.get(from_num, ()))
-            elif callable(from_num):
+            elif isinstance(from_num, Callable):
                 from_num, to_num = from_num(epoch, op, table), to_num(epoch, op, table)
             assert 0 <= from_num <= to_num
             curr_state = Success(epoch, op, table.copy()) if from_num == 0 else 'GO'
@@ -91,8 +90,8 @@ def make_gen(target, num: tuple) -> callable:
             inner_gen = gen(epoch, op, table, log)
             next(inner_gen)
             while counter < to_num:
-                recv_char = yield curr_state
-                echo = inner_gen.send(recv_char)
+                recv = yield curr_state
+                echo = inner_gen.send(recv)
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
@@ -115,7 +114,7 @@ def is_l(obj) -> bool:
 def parse_n(num) -> tuple:
     if num is None:
         return 1, 1
-    if isinstance(num, int) or callable(num):
+    if isinstance(num, (int, Callable)):
         return num, num
     if isinstance(num, tuple):
         assert isinstance(num[0], type(num[1]))
@@ -138,9 +137,9 @@ def parse_n(num) -> tuple:
 
 def str_n(num: tuple) -> str:
     from_num, to_num = num
-    if callable(from_num):
-        from_num = '<{}>'.format(from_num.__name__)
-        to_num = '<{}>'.format(to_num.__name__)
+    if isinstance(from_num, Callable):
+        tpl = '<{}>'.format
+        from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
     if from_num == to_num:
         if from_num == 1:
             return ''
