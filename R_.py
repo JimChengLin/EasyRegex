@@ -151,7 +151,6 @@ def str_n(num: tuple) -> str:
 class R:
     def __init__(self, target_rule, num=None, name: str = None):
         # R有两种形态, matcher和wrapper
-        # matcher识别target
         self.target_rule = target_rule
         self.num = parse_n(num)
         self.name = name
@@ -194,6 +193,7 @@ class R:
         return self_clone
 
     def __xor__(self, other: 'R') -> 'R':
+        other = other.clone()
         self_clone = R(self.clone())
         self_clone.xor_r = other
         return R(self_clone)
@@ -219,19 +219,18 @@ class R:
         s = str(self.target_rule)
 
         def group() -> str:
-            return '[' + s + ']'
+            return '[{}]'.format(s)
 
         def is_group() -> bool:
             return s.startswith('[') and s.endswith(']')
 
         if self.xor_r:
-            s += '^' + str(self.xor_r)
-            s = group()
+            s = '[{}^{}]'.format(s, self.xor_r)
         elif self.invert:
-            s = '~' + group()
+            s = '~[{}]'.format(s)
         else:
             if self.demand_r:
-                s += '&' + str(self.demand_r)
+                s += '&{}'.format(self.demand_r)
             if self.sibling_l:
                 s += '|' + '|'.join(str(i) for i in self.sibling_l)
                 s = group()
