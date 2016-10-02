@@ -291,9 +291,26 @@ class R:
             this_res_l = res_l
 
         if self.xor_r:
-            pass
+            res_l = []
+            for res in this_res_l:
+                self.xor_r.active(res)
+                for char in res.prev_str:
+                    xor_res_l = self.xor_r.broadcast(char)
+                self.xor_r.broadcast(None)
+                if xor_res_l:
+                    res_l.append(res)
+                    break
+            for res in this_res_l:
+                self.xor_r.active(res)
+                for char in res.prev_str:
+                    xor_res_l = self.xor_r.broadcast(char)
+                self.xor_r.broadcast(None)
+                if xor_res_l:
+                    res_l.append(res)
+                    break
+            this_res_l = res_l
         elif self.invert:
-            pass
+            this_res_l = [i.invert() for i in this_res_l]
         else:
             if self.and_r and this_res_l:
                 res_l = []
