@@ -300,12 +300,14 @@ class R:
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
-                invert = False
+                success = False
+                if res and not xor_res_l:
+                    success = True
                 for xor_res in xor_res_l:
                     if bool(res) is not bool(xor_res):
                         res.capture_t += xor_res.capture_t
-                        invert = True
-                if invert:
+                        success = True
+                if success:
                     res.as_success()
                 else:
                     res.as_fail()
@@ -324,8 +326,15 @@ class R:
                     for char in res.prev_str:
                         and_res_l = self.and_r.broadcast(char)
                     self.and_r.broadcast()
-                    if and_res_l:
+                    append = False
+                    for and_res in and_res_l:
+                        if and_res:
+                            res.capture_t += and_res.capture_t
+                            append = True
+                    if append:
                         res_l.append(res)
+                    else:
+                        res_l.append(res.as_fail())
                 self_res_l = res_l
             for or_r in self.or_r_l:
                 or_r_res_l = or_r.broadcast(char)
