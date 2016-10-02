@@ -388,13 +388,14 @@ class R:
                     echo = 'OPT'
         return echo
 
-    def match(self, source: Iterable):
-        res_l = []
+    def imatch(self, source: Iterable):
         for i, char in enumerate(chain([EOF], source, [EOF])):
             i -= 1
             self.active(Res(i, i))
-            res_l.extend(filter(bool, self.broadcast(char)))
-        return res_l
+            yield from filter(bool, self.broadcast(char))
+
+    def match(self, source: Iterable):
+        return list(self.imatch(source))
 
     def clone(self):
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name)
