@@ -108,7 +108,7 @@ def make_gen(target, num_t: tuple):
                         yield echo
                 elif isinstance(echo, Fail):
                     yield echo
-                    break
+                    yield 'DONE'
                 curr_state = echo
             yield 'DONE'
 
@@ -300,10 +300,15 @@ class R:
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
-                if bool(res) is bool(xor_res_l):
-                    res.as_fail()
-                else:
+                invert = False
+                for xor_res in xor_res_l:
+                    if bool(res) is not bool(xor_res):
+                        res.capture_t += xor_res.capture_t
+                        invert = True
+                if invert:
                     res.as_success()
+                else:
+                    res.as_fail()
                 res_l.append(res)
             self_res_l = res_l
         elif self.invert:
