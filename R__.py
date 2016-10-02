@@ -296,22 +296,15 @@ class R:
         if self.xor_r:
             res_l = []
             for res in self_res_l:
-                if res:
-                    self.xor_r.active(Res(res.epoch, res.op))
-                    for char in res.prev_str:
-                        xor_res_l = self.xor_r.broadcast(char)
-                    self.xor_r.broadcast()
-                    if xor_res_l:
-                        res.as_fail()
-                    res_l.append(res)
+                self.xor_r.active(Res(res.epoch, res.op))
+                for char in res.prev_str:
+                    xor_res_l = self.xor_r.broadcast(char)
+                self.xor_r.broadcast()
+                if bool(res) is bool(xor_res_l):
+                    res.as_fail()
                 else:
-                    self.xor_r.active(Res(res.epoch, res.op))
-                    for char in res.prev_str:
-                        xor_res_l = self.xor_r.broadcast(char)
-                    self.xor_r.broadcast()
-                    if xor_res_l:
-                        res.as_success()
-                    res_l.append(res)
+                    res.as_success()
+                res_l.append(res)
             self_res_l = res_l
         elif self.invert:
             self_res_l = [i.invert() for i in self_res_l]
@@ -328,29 +321,26 @@ class R:
                     self.and_r.broadcast()
                     if and_res_l:
                         res_l.append(res)
-                        break
                 self_res_l = res_l
-
             for or_r in self.or_r_l:
                 or_r_res_l = or_r.broadcast(char)
                 self_res_l.extend(or_r_res_l)
-        if self.name and self_res_l:
-            for res in self_res_l:
-                if res:
-                    res.capture_t += (self.name, res.op, res.ed)
 
+        if self.name:
+            for res in filter(bool, self_res_l):
+                res.capture_t += (self.name, res.op, res.ed)
         if self.next_r:
-            cursor = self.next_r
+            next_r = self.next_r
             seed_res_l = self_res_l[:]
             while seed_res_l:
                 res_l = []
-                for res in seed_res_l:
-                    echo = cursor.active(res)
+                for res in filter(bool, seed_res_l):
+                    echo = next_r.active(res)
                     if echo == 'OPT':
                         res_l.append(res)
-                if cursor.next_r:
-                    cursor = cursor.next_r
+                if next_r.next_r:
                     seed_res_l = res_l
+                    next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
         if self.next_r:
@@ -390,8 +380,7 @@ class R:
 
     def imatch(self, source: Iterable):
         for i, char in enumerate(chain([EOF], source, [EOF])):
-            i -= 1
-            self.active(Res(i, i))
+            self.active(Res(i - 1, i - 1))
             yield from filter(bool, self.broadcast(char))
 
     def match(self, source: Iterable):
