@@ -263,11 +263,9 @@ class R:
         return s
 
     def broadcast(self, char):
-        next_res_l = None
         if self.next_r:
             next_res_l = self.next_r.broadcast(char)
 
-        seed_res_l = []
         if self.is_matcher:
             this_res_l = []
             if self.fa_l:
@@ -277,22 +275,20 @@ class R:
                     if echo != 'NO':
                         fa_l.append(fa)
                     if isinstance(echo, Res):
-                        seed_res_l.append(echo)
                         this_res_l.append(echo)
                 self.fa_l = fa_l
         else:
             this_res_l = self.target_rule.broadcast(char)
-            filtered_res_l = []
+            res_l = []
             for res in this_res_l:
                 from_num, to_num = explain_n(res, self.num_t)
                 res.nth += 1
                 if res.nth < to_num:
                     self.active(res)
                 if from_num <= res.nth <= to_num:
-                    res.nth = 0
-                    filtered_res_l.append(res)
-            this_res_l = filtered_res_l
-            seed_res_l.extend(this_res_l)
+                    res.nth = 0  # 已激活
+                    res_l.append(res)
+            this_res_l = res_l
 
         if self.xor_r:
             pass
@@ -300,46 +296,42 @@ class R:
             pass
         else:
             if self.and_r and this_res_l:
-                filtered_res_l = []
+                res_l = []
                 for res in this_res_l:
-                    and_res_l = None
                     self.and_r.active(res)
                     for char in res.prev_str:
                         and_res_l = self.and_r.broadcast(char)
                     self.and_r.broadcast(None)
                     if and_res_l:
-                        filtered_res_l.append(res)
+                        res_l.append(res)
                         break
-                this_res_l = filtered_res_l
+                this_res_l = res_l
 
             for or_r in self.or_r_l:
                 or_r_res_l = or_r.broadcast(char)
-                if or_r_res_l:
-                    seed_res_l.extend(or_r_res_l)
-                    this_res_l.extend(or_r_res_l)
-
+                this_res_l.extend(or_r_res_l)
         if self.name and this_res_l:
             for res in this_res_l:
                 res.capture_t += (self.name, res.op, res.ed)
 
         if self.next_r:
             cursor = self.next_r
+            seed_res_l = this_res_l[:]
             while seed_res_l:
-                sec_seed_l = []
+                res_l = []
                 for res in seed_res_l:
                     echo = cursor.active(res)
                     if echo == 'OPT':
-                        sec_seed_l.append(res)
-                seed_res_l.clear()
-                if cursor.next_r is None:
-                    next_res_l.extend(sec_seed_l)
+                        res_l.append(res)
+                if self.next_r.next_r:
+                    cursor = self.next_r
+                    seed_res_l = res_l
                 else:
-                    seed_res_l = sec_seed_l
-
-        if self.next_r is None:
-            return this_res_l
-        else:
+                    next_res_l.extend(res_l)
+        if self.next_r:
             return next_res_l
+        else:
+            return this_res_l
 
     def active(self, prev_res: Res, log=False, affect=True):
         log = bool(log or self.and_r or self.xor_r)
@@ -366,10 +358,9 @@ class R:
                 if and_echo != 'OPT':
                     echo = 'GO'
             for or_r in self.or_r_l:
-                or_r_echo = or_r.active(prev_res, affect=False)
+                or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
-                    break
         return echo
 
     def match(self, source: Iterable):
