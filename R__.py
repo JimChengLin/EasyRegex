@@ -4,9 +4,9 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=(), **_):
+    def __init__(self, epoch: int, op: int, nth=0, prev_str='', capture_t=(), **_):
         self.epoch = epoch
-        self.ed = self.op = ed
+        self.op = self.ed = op
 
         self.nth = nth
         self.prev_str = prev_str
@@ -54,7 +54,7 @@ class Fail(Res):
         return False
 
 
-def make_gen(target, num_t: tuple):  # -> fa
+def make_gen(target, num_t: tuple):
     if isinstance(target, Iterable):
         def gen(prev_res: Res, log: bool):
             res = prev_res.copy()
@@ -301,22 +301,27 @@ class R:
                     for char in res.prev_str:
                         xor_res_l = self.xor_r.broadcast(char)
                     self.xor_r.broadcast()
-                    if not xor_res_l:
-                        res_l.append(res.as_success())
+                    if xor_res_l:
+                        res.as_fail()
+                    res_l.append(res)
                 else:
-                    self.xor_r.active(res)
+                    self.xor_r.active(Res(res.epoch, res.op))
                     for char in res.prev_str:
                         xor_res_l = self.xor_r.broadcast(char)
                     self.xor_r.broadcast()
                     if xor_res_l:
-                        res_l.append(res.as_success())
+                        res.as_success()
+                    res_l.append(res)
             self_res_l = res_l
         elif self.invert:
             self_res_l = [i.invert() for i in self_res_l]
         else:
-            if self.and_r and self_res_l:
+            if self.and_r:
                 res_l = []
                 for res in self_res_l:
+                    if not res:
+                        res_l.append(res)
+                        continue
                     self.and_r.active(res)
                     for char in res.prev_str:
                         and_res_l = self.and_r.broadcast(char)
@@ -343,8 +348,8 @@ class R:
                     echo = cursor.active(res)
                     if echo == 'OPT':
                         res_l.append(res)
-                if self.next_r.next_r:
-                    cursor = self.next_r
+                if cursor.next_r:
+                    cursor = cursor.next_r
                     seed_res_l = res_l
                 else:
                     next_res_l.extend(res_l)
