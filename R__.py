@@ -1,90 +1,94 @@
+from itertools import chain
 from math import inf
-from typing import Iterable, Callable, Iterator, Dict, List, Tuple, TypeVar
+from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, ed: int, table: dict):
+    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=(), op: int = None):
         self.epoch = epoch
         self.ed = ed
-        self.table = table
+        self.nth = nth
+        self.prev_str = prev_str
+        self.capture_t = capture_t
+        self.op = op
+
+    @property
+    def capture_d(self):
+        d = {}
+        for k, op, ed in self.capture_t:
+            d.setdefault(k, []).append((op, ed))
+        return d
 
     def __repr__(self):
-        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture_record or '')
+        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture_d or '')
 
     def __eq__(self, other):
         if isinstance(other, Res):
             return self.epoch == other.epoch and self.ed == other.ed
 
-    @property
-    def capture_record(self) -> Dict[str, List[Tuple[int, int]]]:
-        record = {}
-        for k in self.table:
-            if k.startswith('@'):
-                op = self.table['_' + k]
-                record[k] = [(op, ed) for ed in self.table[k]]
-        return record
+    def copy(self):
+        return Res(self.epoch, self.ed, self.nth, self.prev_str, self.capture_t)
+
+    def as_success(self):
+        self.__class__ = Success
+        return self
+
+    def as_fail(self):
+        self.__class__ = Fail
+        return self
 
 
 class Success(Res):
-    def invert(self) -> 'Fail':
+    def invert(self):
         self.__class__ = Fail
         return self
 
 
 class Fail(Res):
-    def invert(self) -> 'Success':
+    def invert(self):
         self.__class__ = Success
         return self
 
 
-Echo = TypeVar('Echo', Success, Fail, 'NO')
-
-
-def make_gen(target, num: tuple) -> Callable:  # -> fa
+def make_gen(target, num_t: tuple):  # fa
     if isinstance(target, Iterable):
-        def gen(epoch: int, op: int, table: dict, log: bool) -> Iterable[Success, Fail, str]:
-            table = table.copy()
-            ed = op
-            table['$prev_str'] = ''
+        def gen(prev_res: Res, log: bool):
+            res = prev_res.copy()
             for expect in target:
                 recv = yield 'GO'
                 if log:
-                    table['$prev_str'] += recv
+                    res.prev_str += recv
                 if recv == expect:
-                    ed += 1
+                    res.ed += 1
                 else:
-                    yield Fail(epoch, ed, table)
-            yield Success(epoch, ed, table)
+                    yield res.as_fail()
+                    yield 'NO'
+            yield res.as_success()
             yield 'NO'
     elif isinstance(target, Callable):
-        def gen(epoch: int, op: int, table: dict, log: bool):
-            table = table.copy()
+        def gen(prev_res: Res, log: bool):
+            res = prev_res.copy()
             recv = yield 'GO'
-            table['$prev_str'] = recv if log else ''
-            if target(recv, (epoch, op, table)):
-                yield Success(epoch, op + 1, table)
+            res.prev_str = recv if log else ''
+            if target(recv, prev_res):
+                yield res.as_success()
             else:
-                yield Fail(epoch, op + 1, table)
-            yield 'NO'
+                yield res.as_fail()
+            yield 'No'
     else:
         raise Exception
 
-    if num == (1, 1):
+    if num_t == (1, 1):
         return gen
     else:
-        def decorate_g(epoch: int, op: int, table: dict, log: bool):
+        def decorate_gen(prev_res: Res, log: bool):
             counter = 0
-            from_num, to_num = num
-            if isinstance(from_num, str):
-                from_num = to_num = len(table.get(from_num, ()))
-            elif isinstance(from_num, Callable):
-                from_num, to_num = from_num(epoch, op, table), to_num(epoch, op, table)
-            assert 0 <= from_num <= to_num
-            curr_state = 'OPTION' if from_num == 0 else 'GO'
+            from_num, to_num = explain_n(prev_res, num_t)
+            curr_state = 'OK' if from_num == 0 else 'GO'
             if to_num == 0:
                 yield curr_state
 
-            inner_gen = gen(epoch, op, table, log)
+            inner_gen = gen(prev_res, log)
             next(inner_gen)
             while counter < to_num:
                 recv = yield curr_state
@@ -92,23 +96,26 @@ def make_gen(target, num: tuple) -> Callable:  # -> fa
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
-                        inner_gen = gen(epoch, echo.ed, table)
+                        inner_gen = gen(echo, log)
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
                     elif counter == to_num:
                         yield echo
+                elif isinstance(echo, Fail):
+                    yield echo
+                    yield 'NO'
                 curr_state = echo
             yield 'NO'
 
-        return decorate_g
+        return decorate_gen
 
 
-def is_l(obj) -> bool:
+def is_l(obj):
     return isinstance(obj, list)
 
 
-def parse_n(num) -> tuple:
+def parse_n(num):
     if num is None:
         return 1, 1
     if isinstance(num, (int, Callable)):
@@ -132,8 +139,8 @@ def parse_n(num) -> tuple:
     raise Exception
 
 
-def str_n(num: tuple) -> str:
-    from_num, to_num = num
+def str_n(num_t: tuple):
+    from_num, to_num = num_t
     if isinstance(from_num, Callable):
         tpl = '<{}>'.format
         from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
@@ -145,13 +152,14 @@ def str_n(num: tuple) -> str:
         return '{' + str(from_num) + ',' + str(to_num) + '}'
 
 
-def explain_n(num: tuple, res: Res) -> tuple:
-    epoch, op, table = res.epoch, res.ed, res.table
-    from_num, to_num = num
+def explain_n(res: Res, num_t: tuple):
+    epoch, op, capture_d = res.epoch, res.ed, res.capture_d
+    from_num, to_num = num_t
     if isinstance(from_num, str):
-        from_num = to_num = len(table.get(from_num, ()))
+        from_num = to_num = len(capture_d.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(epoch, op, table), to_num(epoch, op, table)
+        from_num, to_num = from_num(epoch, op, capture_d), to_num(epoch, op, capture_d)
+    assert 0 <= from_num <= to_num
     return from_num, to_num
 
 
@@ -162,22 +170,22 @@ class R:
         self.name = name
 
         self.next_r = None
-        self.demand_r = None
         self.sibling_l = []
+        self.demand_r = None
 
         if self.is_matcher:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num)
 
         self.xor_r = None
-        self.invert = False
+        self.invert = Fail
 
     @property
-    def is_matcher(self) -> bool:
+    def is_matcher(self):
         return not self.is_wrapper
 
     @property
-    def is_wrapper(self) -> bool:
+    def is_wrapper(self):
         return isinstance(self.target_rule, R)
 
     def __and__(self, other: 'R') -> 'R':
@@ -252,109 +260,50 @@ class R:
             s += str(self.next_r)
         return s
 
-    def auto_flip(self, echo):
-        if self.invert and isinstance(echo, (Success, Fail)):
-            echo = echo.invert()
-        if isinstance(echo, Fail):
-            echo = 'NO'
-        return echo
-
     def broadcast(self, char):
-        next_echo = None
-        if self.next_r:
-            next_echo = self.next_r.broadcast(char)
+        return char
 
-        seed_echo = []
+    def active(self, prev_res: Res, log=False, append=True):
+        log = bool(log or self.demand_r or self.xor_r)
         if self.is_matcher:
-            state = {'GO': False, 'NO': False, 'Res': []}
-            if self.fa_l:
-                fa_l = []
-                for fa in self.fa_l:
-                    echo = self.auto_flip(fa.send(char))
-                    if echo == 'GO':
-                        state['GO'] = True
-                        fa_l.append(fa)
-                    elif isinstance(echo, Success):
-                        state['Res'].append(echo)
-                    elif echo == 'NO':
-                        state['NO'] = True
-                    else:
-                        raise Exception
-                self.fa_l = fa_l
-
-            if state['Res']:
-                seed_echo.extend(state['Res'])
-                this_echo = state['Res']
-            elif state['GO']:
-                this_echo = 'GO'
-            elif state['NO'] or not self.fa_l:
-                this_echo = 'NO'
-            else:
-                raise Exception
-        else:
-            this_echo = self.target_rule.broadcast(char)
-            if is_l(this_echo):
-                filter_echo = []
-                for res in this_echo:
-                    from_num, to_num = explain_n(self.num, res)
-                    if self.name and '_' + self.name not in res.table:
-                        res.table['_' + self.name] = res.op
-
-                    if '$nth' not in res.table:
-                        res.table['$nth'] = 1
-                    if res.table['$nth'] < to_num:
-                        self.active(res)
-                    if from_num <= res.table['$nth'] <= to_num:
-                        res.table['$nth'] = 0
-                        filter_echo.append(res)
-                this_echo = filter_echo
-                if this_echo:
-                    seed_echo.extend(this_echo)
-
-    def active(self, prev_res: Res, log=False, append=True) -> str:
-        if self.is_matcher:
-            fa = self.gen(prev_res.epoch, prev_res.ed, prev_res.table, log or bool(self.demand_r))
+            fa = self.gen(prev_res, log)
             echo = next(fa)
             if append:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res, bool(self.demand_r))
+            echo = self.target_rule.active(prev_res, log)
             if echo == 'GO':
-                from_num, _ = self.num
-                epoch, op, table = prev_res.epoch, prev_res.ed, prev_res.table
-                if isinstance(from_num, str):
-                    from_num = len(table.get(from_num, ()))
-                elif isinstance(from_num, Callable):
-                    from_num = from_num(epoch, op, table)
+                from_num, _ = explain_n(prev_res, self.num)
                 if from_num == 0:
-                    echo = 'OPTION'
+                    echo = 'OK'
 
         if self.xor_r:
             xor_echo = self.xor_r.active(prev_res, append=False)
-            if xor_echo != echo:
-                echo = 'OPTION'
-        elif self.invert:
-            if echo == 'GO':
-                echo = 'OPTION'
-            elif echo == 'OPTION':
+            if xor_echo == echo:
                 echo = 'GO'
             else:
-                raise Exception
+                echo = 'OK'
+        elif self.invert:
+            if echo == 'GO':
+                echo = 'OK'
+            else:
+                echo = 'GO'
         else:
-            if echo == 'OPTION' and self.demand_r:
+            if echo == 'OK' and self.demand_r:
                 demand_echo = self.demand_r.active(prev_res, append=False)
-                if demand_echo != 'OPTION':
+                if demand_echo != 'OK':
                     echo = 'GO'
             for sibling in self.sibling_l:
                 sibling_echo = sibling.active(prev_res, append=False)
-                if sibling_echo == 'OPTION':
-                    echo = 'OPTION'
+                if sibling_echo == 'OK':
+                    echo = 'OK'
+                    break
         return echo
 
     def match(self, source: Iterable) -> list:
         res_l = []
-        for i, char in enumerate(source):
-            self.active(Res(i, i, {}))
+        for i, char in chain([(-1, MatchStart)], enumerate(chain(source, [MatchEnd]))):
+            self.active(Res(i, i))
             this_echo = self.broadcast(char)
             if is_l(this_echo):
                 res_l.extend(this_echo)
@@ -370,7 +319,6 @@ class R:
         matcher.invert = self.invert
         if self.next_r:
             matcher.next_r = self.next_r.clone()
-        return matcher
 
 
 class MatchStart:
