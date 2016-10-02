@@ -4,13 +4,13 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=(), op: int = None):
+    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=()):
         self.epoch = epoch
         self.ed = ed
+
         self.nth = nth
         self.prev_str = prev_str
         self.capture_t = capture_t
-        self.op = op
 
     @property
     def capture_d(self):
@@ -66,9 +66,9 @@ def make_gen(target, num_t: tuple):  # -> fa
                     res.ed += 1
                 else:
                     yield res.as_fail()
-                    yield 'STOP'
+                    yield 'DONE'
             yield res.as_success()
-            yield 'STOP'
+            yield 'DONE'
     elif isinstance(target, Callable):
         def gen(prev_res: Res, log: bool):
             res = prev_res.copy()
@@ -78,7 +78,7 @@ def make_gen(target, num_t: tuple):  # -> fa
                 yield res.as_success()
             else:
                 yield res.as_fail()
-            yield 'STOP'
+            yield 'DONE'
     else:
         raise Exception
 
@@ -88,7 +88,7 @@ def make_gen(target, num_t: tuple):  # -> fa
         def decorate_gen(prev_res: Res, log: bool):
             counter = 0
             from_num, to_num = explain_n(prev_res, num_t)
-            curr_state = 'OPTION' if from_num == 0 else 'GO'
+            curr_state = 'OPT' if from_num == 0 else 'GO'
             if to_num == 0:
                 yield curr_state
 
@@ -110,7 +110,7 @@ def make_gen(target, num_t: tuple):  # -> fa
                     yield echo
                     break
                 curr_state = echo
-            yield 'STOP'
+            yield 'DONE'
 
         return decorate_gen
 
@@ -153,12 +153,11 @@ def str_n(num_t: tuple):
 
 
 def explain_n(res: Res, num_t: tuple):
-    epoch, ed, capture_d = res.epoch, res.ed, res.capture_d
     from_num, to_num = num_t
     if isinstance(from_num, str):
-        from_num = to_num = len(capture_d.get(from_num, ()))
+        from_num = to_num = len(res.capture_d.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(epoch, ed, capture_d), to_num(epoch, ed, capture_d)
+        from_num, to_num = from_num(res), to_num(res)
     assert 0 <= from_num <= to_num
     return from_num, to_num
 
@@ -224,14 +223,14 @@ class R:
         cursor = self_clone
         for other in other_l:
             assert cursor.next_r is None
-            other = other.clone() if isinstance(other, R) else R(other)
+            other = other.clone() if isinstance(other, R) else R(other)  # 自动转化
             cursor.next_r = other
             cursor = other
         return R(self_clone)
 
     def __repr__(self):
         if isinstance(self.target_rule, Callable):
-            s = '<{}>'.format(self.target_rule)
+            s = '<{}>'.format(self.target_rule.__name__)
         else:
             s = str(self.target_rule)
 
@@ -244,12 +243,12 @@ class R:
         if self.xor_r:
             s = '[{}^{}]'.format(s, self.xor_r)
         elif self.invert:
-            s = '~[{}]'.format(s)
+            s = '[~[{}]]'.format(s)
         else:
             if self.and_r:
                 s += '&' + str(self.and_r)
             if self.or_r_l:
-                s += '|' + '|'.join(str(i) for i in self.or_r_l)
+                s += '|' + '|'.join(str(or_r) for or_r in self.or_r_l)
                 s = group()
             if (self.and_r or (self.is_wrapper and self.target_rule.and_r)) and self.next_r and not is_group():
                 s = group()
@@ -278,28 +277,28 @@ class R:
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
-                    echo = 'OPTION'
+                    echo = 'OPT'
 
         if self.xor_r:
             xor_echo = self.xor_r.active(prev_res, append=False)
-            echo = 'GO' if xor_echo == echo else 'OPTION'
+            echo = 'GO' if xor_echo == echo else 'OPT'
         elif self.invert:
-            echo = 'GO' if echo == 'OPTION' else 'OPTION'
+            echo = 'GO' if echo == 'OPT' else 'OPT'
         else:
-            if echo == 'OPTION' and self.and_r:
+            if echo == 'OPT' and self.and_r:
                 and_echo = self.and_r.active(prev_res, append=False)
-                if and_echo != 'OPTION':
+                if and_echo != 'OPT':
                     echo = 'GO'
             for or_r in self.or_r_l:
                 or_r_echo = or_r.active(prev_res, append=False)
-                if or_r_echo == 'OPTION':
-                    echo = 'OPTION'
+                if or_r_echo == 'OPT':
+                    echo = 'OPT'
                     break
         return echo
 
     def match(self, source: Iterable):
         res_l = []
-        for i, char in chain([(-1, MatchOP)], chain(enumerate(chain(source, [MatchED])))):
+        for i, char in chain([(-1, MOP)], chain(enumerate(chain(source, [MED])))):
             self.active(Res(i, i))
             res_l.extend(filter(bool, self.broadcast(char)))
         return res_l
@@ -316,9 +315,9 @@ class R:
             matcher.next_r = self.next_r.clone()
 
 
-class MatchOP:
+class MOP:
     pass
 
 
-class MatchED:
+class MED:
     pass
