@@ -262,7 +262,7 @@ class R:
             s += str(self.next_r)
         return s
 
-    def broadcast(self, char):
+    def broadcast(self, char=None):
         if self.next_r:
             next_res_l = self.next_r.broadcast(char)
 
@@ -281,6 +281,9 @@ class R:
             self_res_l = self.target_rule.broadcast(char)
             res_l = []
             for res in self_res_l:
+                if not res:
+                    res_l.append(res)
+                    continue
                 from_num, to_num = explain_n(res, self.num_t)
                 res.nth += 1
                 if res.nth < to_num:
@@ -293,21 +296,20 @@ class R:
         if self.xor_r:
             res_l = []
             for res in self_res_l:
-                self.xor_r.active(res)
-                for char in res.prev_str:
-                    xor_res_l = self.xor_r.broadcast(char)
-                self.xor_r.broadcast(None)
-                if xor_res_l:
-                    res_l.append(res)
-                    break
-            for res in self_res_l:
-                self.xor_r.active(res)
-                for char in res.prev_str:
-                    xor_res_l = self.xor_r.broadcast(char)
-                self.xor_r.broadcast(None)
-                if xor_res_l:
-                    res_l.append(res)
-                    break
+                if res:
+                    self.xor_r.active(Res(res.epoch, res.op))
+                    for char in res.prev_str:
+                        xor_res_l = self.xor_r.broadcast(char)
+                    self.xor_r.broadcast()
+                    if not xor_res_l:
+                        res_l.append(res.as_success())
+                else:
+                    self.xor_r.active(res)
+                    for char in res.prev_str:
+                        xor_res_l = self.xor_r.broadcast(char)
+                    self.xor_r.broadcast()
+                    if xor_res_l:
+                        res_l.append(res.as_success())
             self_res_l = res_l
         elif self.invert:
             self_res_l = [i.invert() for i in self_res_l]
@@ -318,7 +320,7 @@ class R:
                     self.and_r.active(res)
                     for char in res.prev_str:
                         and_res_l = self.and_r.broadcast(char)
-                    self.and_r.broadcast(None)
+                    self.and_r.broadcast()
                     if and_res_l:
                         res_l.append(res)
                         break
@@ -329,7 +331,8 @@ class R:
                 self_res_l.extend(or_r_res_l)
         if self.name and self_res_l:
             for res in self_res_l:
-                res.capture_t += (self.name, res.op, res.ed)
+                if res:
+                    res.capture_t += (self.name, res.op, res.ed)
 
         if self.next_r:
             cursor = self.next_r
