@@ -4,7 +4,7 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=()):
+    def __init__(self, epoch: int, ed: int, nth=0, prev_str='', capture_t=(), **_):
         self.epoch = epoch
         self.ed = self.op = ed
 
@@ -243,7 +243,7 @@ class R:
         if self.xor_r:
             s = '[{}^{}]'.format(s, self.xor_r)
         elif self.invert:
-            s = '[~[{}]]'.format(s)
+            s = '[~{}]'.format(s)
         else:
             if self.and_r:
                 s += '&' + str(self.and_r)
@@ -341,32 +341,32 @@ class R:
         else:
             return next_res_l
 
-    def active(self, prev_res: Res, log=False, append=True):
+    def active(self, prev_res: Res, log=False, affect=True):
         log = bool(log or self.and_r or self.xor_r)
         if self.is_matcher:
             fa = self.gen(prev_res, log)
             echo = next(fa)
-            if append:
+            if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res, log)
+            echo = self.target_rule.active(prev_res, log, affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
                     echo = 'OPT'
 
         if self.xor_r:
-            xor_echo = self.xor_r.active(prev_res, append=False)
+            xor_echo = self.xor_r.active(prev_res, affect=False)
             echo = 'GO' if xor_echo == echo else 'OPT'
         elif self.invert:
             echo = 'GO' if echo == 'OPT' else 'OPT'
         else:
             if echo == 'OPT' and self.and_r:
-                and_echo = self.and_r.active(prev_res, append=False)
+                and_echo = self.and_r.active(prev_res, affect=False)
                 if and_echo != 'OPT':
                     echo = 'GO'
             for or_r in self.or_r_l:
-                or_r_echo = or_r.active(prev_res, append=False)
+                or_r_echo = or_r.active(prev_res, affect=False)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
                     break
@@ -374,8 +374,8 @@ class R:
 
     def match(self, source: Iterable):
         res_l = []
-        for i, char in chain([(-1, MOP)], chain(enumerate(chain(source, [MED])))):
-            self.active(Res(i, i))
+        for i, char in enumerate(chain([EOF], source, [EOF])):
+            self.active(Res(i - 1, i - 1))
             res_l.extend(filter(bool, self.broadcast(char)))
         return res_l
 
@@ -391,9 +391,5 @@ class R:
             matcher.next_r = self.next_r.clone()
 
 
-class MOP:
-    pass
-
-
-class MED:
+class EOF:
     pass
