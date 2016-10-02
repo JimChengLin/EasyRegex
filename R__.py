@@ -272,7 +272,7 @@ class R:
                 fa_l = []
                 for fa in self.fa_l:
                     echo = fa.send(char)
-                    if echo != 'NO':
+                    if echo != 'DONE':
                         fa_l.append(fa)
                     if isinstance(echo, Res):
                         this_res_l.append(echo)
@@ -383,7 +383,8 @@ class R:
     def match(self, source: Iterable):
         res_l = []
         for i, char in enumerate(chain([EOF], source, [EOF])):
-            self.active(Res(i - 1, i - 1))
+            i -= 1
+            self.active(Res(i, i))
             res_l.extend(filter(bool, self.broadcast(char)))
         return res_l
 
