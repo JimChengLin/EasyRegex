@@ -104,7 +104,7 @@ def make_gen(target, num_t: tuple):
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
-                    elif counter == to_num:
+                    if counter == to_num:
                         yield echo
                 elif isinstance(echo, Fail):
                     yield echo
@@ -188,45 +188,45 @@ class R:
         return isinstance(self.target_rule, R)
 
     def __and__(self, other: 'R'):
-        other = other.clone()
-        self_clone = self.clone()
-        if self_clone.or_r_l:
-            cursor = R(self_clone)
+        other = other.copy()
+        self_copy = self.copy()
+        if self_copy.or_r_l:
+            cursor = R(self_copy)
         else:
-            cursor = self_clone
+            cursor = self_copy
             while cursor.and_r is not None:
                 cursor = cursor.and_r
         cursor.and_r = other
-        return self_clone
+        return self_copy
 
     def __or__(self, other: 'R'):
-        other = other.clone()
-        self_clone = self.clone()
-        self_clone.or_r_l.append(other)
-        return self_clone
+        other = other.copy()
+        self_copy = self.copy()
+        self_copy.or_r_l.append(other)
+        return self_copy
 
     def __xor__(self, other: 'R'):
-        other = other.clone()
-        self_clone = R(self.clone())
-        self_clone.xor_r = other
-        return R(self_clone)
+        other = other.copy()
+        self_copy = R(self.copy())
+        self_copy.xor_r = other
+        return R(self_copy)
 
     def __invert__(self):
-        self_clone = R(self.clone())
-        self_clone.invert = True
-        return R(self_clone)
+        self_copy = R(self.copy())
+        self_copy.invert = True
+        return R(self_copy)
 
     def __call__(self, *other_l):
         if not other_l:
             return self
-        self_clone = self.clone()
-        cursor = self_clone
+        self_copy = self.copy()
+        cursor = self_copy
         for other in other_l:
             assert cursor.next_r is None
-            other = other.clone() if isinstance(other, R) else R(other)  # 自动转化
+            other = other.copy() if isinstance(other, R) else R(other)  # 自动转化
             cursor.next_r = other
             cursor = other
-        return R(self_clone)
+        return R(self_copy)
 
     def __repr__(self):
         if isinstance(self.target_rule, Callable):
@@ -401,16 +401,16 @@ class R:
     def match(self, source: Iterable):
         return list(self.imatch(source))
 
-    def clone(self):
-        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name)
+    def copy(self):
+        matcher = R(self.target_rule if self.is_matcher else self.target_rule.copy(), self.num_t, self.name)
         if self.and_r:
-            matcher.and_r = self.and_r.clone()
-        matcher.or_r_l.extend(i.clone() for i in self.or_r_l)
+            matcher.and_r = self.and_r.copy()
+        matcher.or_r_l[:] = (i.copy() for i in self.or_r_l)
         if self.xor_r:
-            matcher.xor_r = self.xor_r.clone()
+            matcher.xor_r = self.xor_r.copy()
         matcher.invert = self.invert
         if self.next_r:
-            matcher.next_r = self.next_r.clone()
+            matcher.next_r = self.next_r.copy()
 
 
 class EOF:
