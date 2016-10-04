@@ -27,7 +27,9 @@ class Res:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def copy(self):
-        return Res(**self.__dict__)
+        res = Res(**self.__dict__)
+        res.ed = self.ed
+        return res
 
     def as_success(self):
         self.__class__ = Success
@@ -75,6 +77,7 @@ def make_gen(target, num_t: tuple):
             recv = yield 'GO'
             res.prev_str = recv if log else ''
             if target(recv, prev_res):
+                res.ed += 1
                 yield res.as_success()
             else:
                 yield res.as_fail()
@@ -293,49 +296,50 @@ class R:
             self_res_l = res_l
 
         if self.xor_r:
-            res_l = []
             for res in self_res_l:
-                self.xor_r.active(Res(res.epoch, res.op))
+                res_copy = res.copy()
+                res_copy.ed = res_copy.op
+                self.xor_r.active(res_copy)
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
-                true_xor_res_l = [i for i in xor_res_l if i]
-                false_xor_res_l = [i for i in xor_res_l if not i]
+
                 if res:
-                    if not xor_res_l:
-                        pass
-                    elif not false_xor_res_l:
-                        res.as_fail()
-                    else:
-                        for xor_res in false_xor_res_l:
-                            res.capture_t += xor_res.caputer_t
-                else:
-                    if true_xor_res_l:
-                        res.as_success()
+                    invert = True
                     for xor_res in xor_res_l:
-                        res.capture_t += xor_res.caputer_t
-                res_l.append(res)
-            self_res_l = res_l
+                        if not xor_res:
+                            invert = False
+                            res.capture_t += xor_res.capture_t
+                    if not xor_res_l:
+                        invert = False
+                    if invert:
+                        res.as_fail()
+                else:
+                    for xor_res in xor_res_l:
+                        if xor_res:
+                            res.as_success()
+                            res.capture_t += xor_res.capture_t
         elif self.invert:
             self_res_l = [i.invert() for i in self_res_l]
         else:
             if self.and_r:
-                res_l = []
                 for res in self_res_l:
                     if not res:
-                        res_l.append(res)
                         continue
-                    self.and_r.active(Res(res.epoch, res.op))
-                    for char in res.prev_str:
-                        and_res_l = self.and_r.broadcast(char)
-                    self.and_r.broadcast()
-                    for and_res in and_res_l:
-                        if and_res:
-                            res.capture_t += and_res.capture_t
-                    if not and_res_l:
-                        res.as_fail()
-                    res_l.append(res)
-                self_res_l = res_l
+                    else:
+                        res_copy = res.copy()
+                        res_copy.ed = res_copy.op
+                        self.and_r.active(res_copy)
+                        for char in res.prev_str:
+                            and_res_l = self.and_r.broadcast(char)
+                        self.and_r.broadcast()
+
+                        for and_res in and_res_l:
+                            if and_res:
+                                res.capture_t += and_res.capture_t
+                        if not and_res_l:
+                            res.as_fail()
+                        res_l.append(res)
             for or_r in self.or_r_l:
                 or_r_res_l = or_r.broadcast(char)
                 self_res_l.extend(or_r_res_l)
@@ -349,6 +353,8 @@ class R:
             while seed_res_l:
                 res_l = []
                 for res in filter(bool, seed_res_l):
+                    res_copy = res.copy()
+                    res_copy.op = res_copy.ed
                     echo = next_r.active(res)
                     if echo == 'OPT':
                         res_l.append(res)
@@ -357,6 +363,7 @@ class R:
                     next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
+
         if self.next_r:
             return next_res_l
         else:
