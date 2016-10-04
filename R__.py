@@ -282,14 +282,14 @@ class R:
             for res in self_res_l:
                 if not res:
                     res_l.append(res)
-                    continue
-                from_num, to_num = explain_n(res, self.num_t)
-                res.nth += 1
-                if res.nth < to_num:
-                    self.active(res)
-                if from_num <= res.nth <= to_num:
-                    res.nth = 0  # 已激活
-                    res_l.append(res)
+                else:
+                    from_num, to_num = explain_n(res, self.num_t)
+                    res.nth += 1
+                    if res.nth < to_num:
+                        self.active(res)
+                    if from_num <= res.nth <= to_num:
+                        res.nth = 0  # 已激活
+                        res_l.append(res)
             self_res_l = res_l
 
         if self.xor_r:
