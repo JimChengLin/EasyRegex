@@ -4,10 +4,11 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, nth=0, prev_str='', capture_t=(), **_):
+    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, prev_str='', capture_t=(), **_):
         self.epoch = epoch
-        self.op = self.ed = op
+        self.op = op
 
+        self.ed = ed or op
         self.nth = nth
         self.prev_str = prev_str
         self.capture_t = capture_t
@@ -27,9 +28,7 @@ class Res:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def copy(self, **kwargs):
-        res = Res(**self.__dict__, **kwargs)
-        res.ed = self.ed
-        return res
+        return Res(**self.__dict__, **kwargs)
 
     def as_success(self):
         self.__class__ = Success
