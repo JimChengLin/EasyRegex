@@ -246,10 +246,9 @@ class R:
             s = '[~{}]'.format(s)
         else:
             if self.and_r:
-                s += '&' + str(self.and_r)
+                s = '{}&{}'.format(s, self.and_r)
             if self.or_r_l:
-                s += '|' + '|'.join(str(or_r) for or_r in self.or_r_l)
-                s = group()
+                s = '[{}|{}]'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
             if (self.and_r or (self.is_wrapper and self.target_rule.and_r)) and self.next_r and not is_group():
                 s = group()
 
