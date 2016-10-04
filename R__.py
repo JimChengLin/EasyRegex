@@ -26,8 +26,8 @@ class Res:
         if isinstance(other, Res):
             return self.epoch == other.epoch and self.ed == other.ed
 
-    def copy(self):
-        res = Res(**self.__dict__)
+    def copy(self, **kwargs):
+        res = Res(**self.__dict__, **kwargs)
         res.ed = self.ed
         return res
 
