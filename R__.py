@@ -61,11 +61,10 @@ def make_gen(target, num_t: tuple):
             res = prev_res.clone()
             for expect in target:
                 recv = yield 'GO'
+                res.ed += 1
                 if log:
                     res.prev_str += recv
-                if recv == expect:
-                    res.ed += 1
-                else:
+                if recv != expect:
                     yield res.as_fail()
                     yield 'DONE'
             yield res.as_success()
@@ -74,9 +73,9 @@ def make_gen(target, num_t: tuple):
         def gen(prev_res: Res, log: bool):
             res = prev_res.clone()
             recv = yield 'GO'
+            res.ed += 1
             res.prev_str = recv if log else ''
             if target(recv, prev_res):
-                res.ed += 1
                 yield res.as_success()
             else:
                 yield res.as_fail()
