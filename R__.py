@@ -4,7 +4,7 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, prev_str='', capture_t=(), **_):
+    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, prev_str='', capture_t=()):
         self.epoch = epoch
         self.op = op
 
@@ -27,7 +27,7 @@ class Res:
         if isinstance(other, Res):
             return self.epoch == other.epoch and self.ed == other.ed
 
-    def copy(self, **kwargs):
+    def clone(self, **kwargs):
         return Res(**self.__dict__, **kwargs)
 
     def as_success(self):
@@ -58,7 +58,7 @@ class Fail(Res):
 def make_gen(target, num_t: tuple):
     if isinstance(target, Iterable):
         def gen(prev_res: Res, log: bool):
-            res = prev_res.copy()
+            res = prev_res.clone()
             for expect in target:
                 recv = yield 'GO'
                 if log:
@@ -72,7 +72,7 @@ def make_gen(target, num_t: tuple):
             yield 'DONE'
     elif isinstance(target, Callable):
         def gen(prev_res: Res, log: bool):
-            res = prev_res.copy()
+            res = prev_res.clone()
             recv = yield 'GO'
             res.prev_str = recv if log else ''
             if target(recv, prev_res):
@@ -190,45 +190,45 @@ class R:
         return isinstance(self.target_rule, R)
 
     def __and__(self, other: 'R'):
-        other = other.copy()
-        self_copy = self.copy()
-        if self_copy.or_r_l:
-            cursor = R(self_copy)
+        other = other.clone()
+        self_clone = self.clone()
+        if self_clone.or_r_l:
+            cursor = R(self_clone)
         else:
-            cursor = self_copy
+            cursor = self_clone
             while cursor.and_r is not None:
                 cursor = cursor.and_r
         cursor.and_r = other
-        return self_copy
+        return self_clone
 
     def __or__(self, other: 'R'):
-        other = other.copy()
-        self_copy = self.copy()
-        self_copy.or_r_l.append(other)
-        return self_copy
+        other = other.clone()
+        self_clone = self.clone()
+        self_clone.or_r_l.append(other)
+        return self_clone
 
     def __xor__(self, other: 'R'):
-        other = other.copy()
-        self_copy = R(self.copy())
-        self_copy.xor_r = other
-        return R(self_copy)
+        other = other.clone()
+        self_clone = R(self.clone())
+        self_clone.xor_r = other
+        return R(self_clone)
 
     def __invert__(self):
-        self_copy = R(self.copy())
-        self_copy.invert = True
-        return R(self_copy)
+        self_clone = R(self.clone())
+        self_clone.invert = True
+        return R(self_clone)
 
     def __call__(self, *other_l):
         if not other_l:
             return self
-        self_copy = self.copy()
-        cursor = self_copy
+        self_clone = self.clone()
+        cursor = self_clone
         for other in other_l:
             assert cursor.next_r is None
-            other = other.copy() if isinstance(other, R) else R(other)  # 自动转化
+            other = other.clone() if isinstance(other, R) else R(other)  # 自动转化
             cursor.next_r = other
             cursor = other
-        return R(self_copy)
+        return R(self_clone)
 
     def __repr__(self):
         if isinstance(self.target_rule, Callable):
@@ -296,9 +296,7 @@ class R:
 
         if self.xor_r:
             for res in self_res_l:
-                res_copy = res.copy()
-                res_copy.ed = res_copy.op
-                self.xor_r.active(res_copy)
+                self.xor_r.active(res.clone(ed=res.op))
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
@@ -319,26 +317,24 @@ class R:
                             res.as_success()
                             res.capture_t += xor_res.capture_t
         elif self.invert:
-            self_res_l = [i.invert() for i in self_res_l]
+            for i in self_res_l:
+                i.invert()
         else:
             if self.and_r:
                 for res in self_res_l:
                     if not res:
                         continue
                     else:
-                        res_copy = res.copy()
-                        res_copy.ed = res_copy.op
-                        self.and_r.active(res_copy)
+                        self.and_r.active(res.clone(ed=res.op))
                         for char in res.prev_str:
                             and_res_l = self.and_r.broadcast(char)
                         self.and_r.broadcast()
 
+                        res.as_fail()
                         for and_res in and_res_l:
                             if and_res:
+                                res.as_success()
                                 res.capture_t += and_res.capture_t
-                        if not and_res_l:
-                            res.as_fail()
-                        res_l.append(res)
             for or_r in self.or_r_l:
                 or_r_res_l = or_r.broadcast(char)
                 self_res_l.extend(or_r_res_l)
@@ -348,21 +344,18 @@ class R:
                 res.capture_t += (self.name, res.op, res.ed)
         if self.next_r:
             next_r = self.next_r
-            seed_res_l = self_res_l[:]
-            while seed_res_l:
+            seed_l = self_res_l[:]
+            while seed_l:
                 res_l = []
-                for res in filter(bool, seed_res_l):
-                    res_copy = res.copy()
-                    res_copy.op = res_copy.ed
-                    echo = next_r.active(res)
+                for res in filter(bool, seed_l):
+                    echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT':
                         res_l.append(res)
                 if next_r.next_r:
-                    seed_res_l = res_l
+                    seed_l = res_l
                     next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
-
         if self.next_r:
             return next_res_l
         else:
@@ -406,16 +399,16 @@ class R:
     def match(self, source: Iterable):
         return list(self.imatch(source))
 
-    def copy(self):
-        matcher = R(self.target_rule if self.is_matcher else self.target_rule.copy(), self.num_t, self.name)
+    def clone(self):
+        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name)
         if self.and_r:
-            matcher.and_r = self.and_r.copy()
-        matcher.or_r_l[:] = (i.copy() for i in self.or_r_l)
+            matcher.and_r = self.and_r.clone()
+        matcher.or_r_l[:] = (i.clone() for i in self.or_r_l)
         if self.xor_r:
-            matcher.xor_r = self.xor_r.copy()
+            matcher.xor_r = self.xor_r.clone()
         matcher.invert = self.invert
         if self.next_r:
-            matcher.next_r = self.next_r.copy()
+            matcher.next_r = self.next_r.clone()
 
 
 class EOF:
