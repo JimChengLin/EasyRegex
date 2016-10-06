@@ -231,7 +231,7 @@ class R:
         return R(self_clone)
 
     def __repr__(self):
-        if isinstance(self.target_rule, Callable):
+        if self.is_matcher and isinstance(self.target_rule, Callable):
             s = '<{}>'.format(self.target_rule.__name__)
         else:
             s = str(self.target_rule)
@@ -408,6 +408,7 @@ class R:
         matcher.invert = self.invert
         if self.next_r:
             matcher.next_r = self.next_r.clone()
+        return matcher
 
 
 class EOF:
