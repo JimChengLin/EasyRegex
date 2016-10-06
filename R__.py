@@ -87,12 +87,12 @@ def make_gen(target, num_t: tuple):
         return gen
     else:
         def decorate_gen(prev_res: Res, log: bool):
-            counter = 0
             from_num, to_num = explain_n(prev_res, num_t)
             curr_state = 'OPT' if from_num == 0 else 'GO'
             if to_num == 0:
                 yield curr_state
 
+            counter = 0
             inner_gen = gen(prev_res, log)
             next(inner_gen)
             while counter < to_num:
@@ -218,9 +218,9 @@ class R:
         return R(self_clone)
 
     def __call__(self, *other_l):
-        if not other_l:
-            return self
         self_clone = self.clone()
+        if not other_l:
+            return self_clone
         cursor = self_clone
         for other in other_l:
             assert cursor.next_r is None
@@ -295,7 +295,7 @@ class R:
 
         if self.xor_r:
             for res in self_res_l:
-                self.xor_r.active(res.clone(ed=res.op))
+                self.xor_r.active(res.clone(ed=res.op, prev_str=''))
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
@@ -322,7 +322,7 @@ class R:
                     if not res:
                         continue
                     else:
-                        self.and_r.active(res.clone(ed=res.op))
+                        self.and_r.active(res.clone(ed=res.op, prev_str=''))
                         for char in res.prev_str:
                             and_res_l = self.and_r.broadcast(char)
                         self.and_r.broadcast()
@@ -345,7 +345,7 @@ class R:
             while seed_res_l:
                 res_l = []
                 for res in seed_res_l:
-                    echo = next_r.active(res.clone(op=res.ed))
+                    echo = next_r.active(res.clone(op=res.ed, prev_str=''))
                     if echo == 'OPT':
                         res_l.append(res)
                 seed_res_l = res_l
