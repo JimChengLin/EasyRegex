@@ -76,8 +76,8 @@ def test_letter_123():
 
 for func in (
         test_str,
-        # test_abc,
-        # test_abcda,
+        test_abc,
+        test_abcda,
         # test_abc_bbc,
         # test_b_2_cd,
         # test_optional_abc_bc,

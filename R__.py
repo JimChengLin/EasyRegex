@@ -1,3 +1,4 @@
+from collections import ChainMap
 from itertools import chain
 from math import inf
 from typing import Iterable, Callable
@@ -28,7 +29,7 @@ class Res:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def clone(self, **kwargs):
-        return Res(**self.__dict__, **kwargs)
+        return Res(**ChainMap(self.__dict__, kwargs))
 
     def as_success(self):
         self.__class__ = Success
