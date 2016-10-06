@@ -301,15 +301,13 @@ class R:
                 self.xor_r.broadcast()
 
                 if res:
-                    invert = True
+                    res.as_fail()
                     for xor_res in xor_res_l:
                         if not xor_res:
-                            invert = False
+                            res.as_success()
                             res.capture_t += xor_res.capture_t
                     if not xor_res_l:
-                        invert = False
-                    if invert:
-                        res.as_fail()
+                        res.as_success()
                 else:
                     for xor_res in xor_res_l:
                         if xor_res:
@@ -343,18 +341,19 @@ class R:
                 res.capture_t += (self.name, res.op, res.ed)
         if self.next_r:
             next_r = self.next_r
-            seed_l = self_res_l[:]
-            while seed_l:
+            seed_res_l = list(filter(bool, self_res_l))
+            while seed_res_l:
                 res_l = []
-                for res in filter(bool, seed_l):
+                for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT':
                         res_l.append(res)
+                seed_res_l = res_l
                 if next_r.next_r:
-                    seed_l = res_l
                     next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
+                    break
         if self.next_r:
             return next_res_l
         else:
