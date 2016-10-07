@@ -308,7 +308,8 @@ class R:
                     from_num, to_num = explain_n(res, self.num_t)
                     res.nth += 1
                     if res.nth < to_num:
-                        self.active(res)
+                        self.active(res.clone(capture_t=(*res.capture_t,
+                                                         (self.name, res.op, res.ed)) if self.name else res.capture_t))
                     if from_num <= res.nth <= to_num:
                         res.nth = 0  # 已激活
                         res_l.append(res)
