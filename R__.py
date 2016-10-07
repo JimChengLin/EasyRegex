@@ -363,7 +363,7 @@ class R:
                 res_l = []
                 for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed, prev_str=''))
-                    if not self.is_top and echo == 'OPT':
+                    if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res)
                 seed_res_l = res_l
                 if next_r.next_r:
@@ -404,7 +404,7 @@ class R:
                 or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
-        if self.is_top and self.next_r and echo == 'OPT':
+        if self.next_r and echo == 'OPT' and self.is_top:
             self.next_r.active(prev_res)
         return echo
 
