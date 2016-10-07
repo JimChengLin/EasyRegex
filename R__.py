@@ -174,12 +174,13 @@ class R:
         self.or_r_l = []
         self.next_r = None
 
+        self.xor_r = None
+        self.invert = False
+        self.is_top_ = False
+
         if self.is_matcher:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num_t)
-
-        self.xor_r = None
-        self.invert = False
 
     @property
     def is_matcher(self):
@@ -188,6 +189,20 @@ class R:
     @property
     def is_wrapper(self):
         return isinstance(self.target_rule, R)
+
+    @property
+    def is_top(self):
+        return self.is_top_
+
+    @is_top.setter
+    def is_top(self, val: bool):
+        cursor = self
+        while True:
+            cursor.is_top_ = val
+            if cursor.is_wrapper:
+                cursor = cursor.target_rule
+            else:
+                break
 
     def __and__(self, other: 'R'):
         other = other.clone()
@@ -347,7 +362,7 @@ class R:
                 res_l = []
                 for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed, prev_str=''))
-                    if echo == 'OPT':
+                    if not self.is_top and echo == 'OPT':
                         res_l.append(res)
                 seed_res_l = res_l
                 if next_r.next_r:
@@ -388,12 +403,16 @@ class R:
                 or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
+        if self.is_top and self.next_r and echo == 'OPT':
+            self.next_r.active(prev_res)
         return echo
 
     def imatch(self, source: Iterable):
+        self.is_top = True
         for i, char in enumerate(chain([EOF], source, [EOF])):
             self.active(Res(i - 1, i - 1))
             yield from filter(bool, self.broadcast(char))
+        self.is_top = False
 
     def match(self, source: Iterable):
         return list(self.imatch(source))
