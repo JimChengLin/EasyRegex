@@ -123,7 +123,6 @@ def parse_n(num):
     if isinstance(num, (int, Callable)):
         return num, num
     if isinstance(num, tuple):
-        assert isinstance(num[0], type(num[1]))
         return num
     if isinstance(num, str):
         if num == '*':
@@ -176,7 +175,7 @@ class R:
 
         self.xor_r = None
         self.invert = False
-        self.is_top_ = False
+        self._is_top = False
 
         if self.is_matcher:
             self.fa_l = []
@@ -192,13 +191,13 @@ class R:
 
     @property
     def is_top(self):
-        return self.is_top_
+        return self._is_top
 
     @is_top.setter
     def is_top(self, val: bool):
         cursor = self
         while True:
-            cursor.is_top_ = val
+            cursor._is_top = val
             if cursor.is_wrapper:
                 cursor = cursor.target_rule
             else:
