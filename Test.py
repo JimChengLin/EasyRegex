@@ -70,8 +70,8 @@ def test_b_2_cd_counter():
 
 def test_letter_123():
     _ = R
-    matcher = _(str.isalpha, '*')(_('123'))
-    print(matcher.match('atfgy123a'))
+    matcher = _(lambda x, _: str.isalpha(x) if isinstance(x, str) else False, '*')(_('123'))
+    assert str(matcher.match('atfgy123a')) == '[FT(0, 8), FT(1, 8), FT(2, 8), FT(3, 8), FT(4, 8), FT(5, 8)]'
 
 
 for func in (
@@ -81,9 +81,9 @@ for func in (
         test_abc_bbc,
         test_b_2_cd,
         test_optional_abc_bc,
-        # test_ab_c_star_c_plus,
-        # test_abc_and_abc,
-        # test_b_2_cd_counter,
-        # test_letter_123,
+        test_ab_c_star_c_plus,
+        test_abc_and_abc,
+        test_b_2_cd_counter,
+        test_letter_123,
 ):
     func()
