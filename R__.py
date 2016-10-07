@@ -284,6 +284,8 @@ class R:
 
         if self.is_matcher:
             self_res_l = []
+            if char is None:
+                self.fa_l.clear()
             if self.fa_l:
                 fa_l = []
                 for fa in self.fa_l:
@@ -412,6 +414,7 @@ class R:
         for i, char in enumerate(chain([EOF], source, [EOF])):
             self.active(Res(i - 1, i - 1))
             yield from filter(bool, self.broadcast(char))
+        self.broadcast()
         self.is_top = False
 
     def match(self, source: Iterable):
