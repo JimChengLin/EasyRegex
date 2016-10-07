@@ -433,5 +433,20 @@ class R:
         return matcher
 
 
-class EOF:
-    pass
+class UDC:
+    def __radd__(self, other):
+        if isinstance(other, Iterable):
+            return [*other, self]
+        else:
+            return [other, self]
+
+    def __add__(self, other):
+        if isinstance(other, Iterable):
+            return [self, *other]
+        else:
+            return [self, other]
+
+
+class EOF(UDC):
+    def __repr__(self):
+        return '(EOF)'
