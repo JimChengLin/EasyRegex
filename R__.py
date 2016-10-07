@@ -359,7 +359,7 @@ class R:
 
         if self.name:
             for res in filter(bool, self_res_l):
-                res.capture_t += (self.name, res.op, res.ed)
+                res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
         if self.next_r:
             next_r = self.next_r
             seed_res_l = list(filter(bool, self_res_l))
