@@ -1,4 +1,3 @@
-from collections import ChainMap
 from itertools import chain
 from math import inf
 from typing import Iterable, Callable
@@ -29,7 +28,7 @@ class Res:
             return self.epoch == other.epoch and self.ed == other.ed
 
     def clone(self, **kwargs):
-        return Res(**ChainMap(self.__dict__, kwargs))
+        return Res(**{**self.__dict__, **kwargs})
 
     def as_success(self):
         self.__class__ = Success
@@ -56,6 +55,11 @@ class Fail(Res):
         return False
 
 
+def concat(prev_str, recv):
+    result = (*prev_str, recv) if isinstance(prev_str, tuple) or not isinstance(recv, str) else prev_str + recv
+    return result
+
+
 def make_gen(target, num_t: tuple):
     if isinstance(target, Iterable):
         def gen(prev_res: Res, log: bool):
@@ -64,7 +68,7 @@ def make_gen(target, num_t: tuple):
                 recv = yield 'GO'
                 res.ed += 1
                 if log:
-                    res.prev_str += recv
+                    res.prev_str = concat(res.prev_str, recv)
                 if recv != expect:
                     yield res.as_fail()
                     yield 'DONE'
@@ -432,20 +436,6 @@ class R:
         return matcher
 
 
-class UDC:
-    def __radd__(self, other):
-        if isinstance(other, Iterable):
-            return [*other, self]
-        else:
-            return [other, self]
-
-    def __add__(self, other):
-        if isinstance(other, Iterable):
-            return [self, *other]
-        else:
-            return [self, other]
-
-
-class EOF(UDC):
+class EOF:
     def __repr__(self):
         return '(EOF)'
