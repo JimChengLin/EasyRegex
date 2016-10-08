@@ -171,7 +171,7 @@ def explain_n(res: Res, num_t: tuple):
     if isinstance(from_num, str):
         from_num = to_num = len(res.capture_d.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(res.to_param()), to_num(res.to_param())
+        from_num, to_num = from_num(*res.to_param()), to_num(*res.to_param())
     assert 0 <= from_num <= to_num
     return from_num, to_num
 
