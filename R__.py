@@ -39,7 +39,7 @@ class Res:
         self.__class__ = Fail
         return self
 
-    def as_param(self):
+    def to_param(self):
         return self.epoch, self.ed, self.capture_d
 
 
@@ -84,7 +84,7 @@ def make_gen(target, num_t: tuple):
             recv = yield 'GO'
             res.ed += 1
             res.prev_str = recv if log else ''
-            if target(recv, res.as_param()):
+            if target(recv, res.to_param()):
                 yield res.as_success()
             else:
                 yield res.as_fail()
@@ -166,12 +166,15 @@ def explain_n(res: Res, num_t: tuple):
     if isinstance(from_num, str):
         from_num = to_num = len(res.capture_d.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(res.as_param()), to_num(res.as_param())
+        from_num, to_num = from_num(res.to_param()), to_num(res.to_param())
     assert 0 <= from_num <= to_num
     return from_num, to_num
 
 
-Mode = Enum('Mode', ('All', 'Greedy', 'Lazy'))
+class Mode(Enum):
+    All = 'A'
+    Greedy = 'G'
+    Lazy = 'L'
 
 
 class R:
@@ -192,6 +195,8 @@ class R:
         if self.is_matcher:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num_t)
+        if self.mode is not Mode.All:
+            self.len_d = {}
 
     @property
     def is_matcher(self):
@@ -290,13 +295,16 @@ class R:
         return s
 
     def broadcast(self, char=None):
+        if char is None:
+            if self.is_matcher:
+                self.fa_l.clear()
+            if self.mode is not Mode.All:
+                self.len_d.clear()
         if self.next_r:
             next_res_l = self.next_r.broadcast(char)
 
         if self.is_matcher:
             self_res_l = []
-            if char is None:
-                self.fa_l.clear()
             if self.fa_l:
                 fa_l = []
                 for fa in self.fa_l:
@@ -424,19 +432,19 @@ class R:
             self.next_r.active(prev_res)
         return echo
 
-    def imatch(self, source: Iterable):
+    def match(self, source: Iterable):
         self.is_top = True
+        res_l = []
         for i, char in enumerate(chain([EOF], source, [EOF])):
-            self.active(Res(i - 1, i - 1))
-            yield from filter(bool, self.broadcast(char))
+            i -= 1
+            self.active(Res(i, i))
+            res_l.extend(filter(bool, self.broadcast(char)))
         self.broadcast()
         self.is_top = False
-
-    def match(self, source: Iterable):
-        return list(self.imatch(source))
+        return res_l
 
     def clone(self):
-        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name)
+        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name, self.mode)
         if self.and_r:
             matcher.and_r = self.and_r.clone()
         matcher.or_r_l[:] = (i.clone() for i in self.or_r_l)
