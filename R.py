@@ -208,7 +208,7 @@ def agl_filter(res_l: list):
                 if length < (k.best_length or 0):
                     break
             else:
-                if length > (k.best_length or inf):
+                if length > (k.best_length if k.best_length is not None else inf):
                     break
         else:
             filter_res_l.append(res)

@@ -89,6 +89,11 @@ def t_num_func():
     assert str(m) == 'a{1,inf}b{%<lambda>%}'
 
 
+def t_lazy():
+    m = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Lazy)(_('123'))
+    assert str(m.match('ab123a')) == '[FT(2, 5)]'
+
+
 for func in (
         t_str,
         t_abc,
@@ -103,5 +108,6 @@ for func in (
         t_ignore_c,
         t_str_num,
         t_num_func,
+        t_lazy,
 ):
     func()
