@@ -52,7 +52,8 @@ def t_abc_and_abc():
 
 def t_b_2_cd_counter():
     m = _('b', '{1,2}', '@b')(_('cd'))
-    assert str(m.match('bbcda')) == "[FT(0, 4){'@b': [(0, 2)]}, FT(1, 4){'@b': [(1, 2)]}]"
+    print(m.match('bbcda'))
+    assert str(m.match('bbcda')) == "[FT(0, 4){'@b': [(0, 1), (0, 2)]}, FT(1, 4){'@b': [(1, 2)]}]"
     m = _(_('b'), '{2}', '@b')(_('cd'))
     assert str(m.match('bbcda')) == "[FT(0, 4){'@b': [(0, 2)]}]"
     m = _(_('b'), '{2}', '@b')(_('cd', '@b'))

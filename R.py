@@ -65,7 +65,7 @@ def concat(prev_str, recv):
     return (*prev_str, recv) if isinstance(prev_str, tuple) or not isinstance(recv, str) else prev_str + recv
 
 
-def make_gen(target, num_t: tuple):
+def make_gen(target, num_t: tuple, name):
     if isinstance(target, Iterable):
         def gen(prev_res: Res, log: bool):
             res = prev_res.clone()
@@ -115,7 +115,8 @@ def make_gen(target, num_t: tuple):
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
-                        inner_gen = gen(echo, log)
+                        inner_gen = gen(echo if name is None else
+                                        echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed))), log)
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
@@ -230,7 +231,7 @@ class R:
 
         if self.is_matcher:
             self.fa_l = []
-            self.gen = make_gen(self.target_rule, self.num_t)
+            self.gen = make_gen(self.target_rule, self.num_t, self.name)
         if self.mode is not Mode.All:
             self.best_length = None
 
