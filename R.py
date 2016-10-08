@@ -6,13 +6,12 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, prev_str='', capture_t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, capture_t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed or op
         self.nth = nth
-        self.prev_str = prev_str
         self.capture_t = capture_t
 
     @property
@@ -62,30 +61,23 @@ class Fail(Res):
         return False
 
 
-def concat(prev_str, recv):
-    return (*prev_str, recv) if isinstance(prev_str, tuple) or not isinstance(recv, str) else prev_str + recv
-
-
 def make_gen(target, num_t: tuple, name):
     if isinstance(target, Iterable):
-        def gen(prev_res: Res, log: bool):
+        def gen(prev_res: Res):
             res = prev_res.clone()
             for expect in target:
                 recv = yield 'GO'
                 res.ed += 1
-                if log:
-                    res.prev_str = concat(res.prev_str, recv)
                 if recv != expect:
                     yield res.as_fail()
                     yield 'DONE'
             yield res.as_success()
             yield 'DONE'
     elif isinstance(target, Callable):
-        def gen(prev_res: Res, log: bool):
+        def gen(prev_res: Res):
             res = prev_res.clone()
             recv = yield 'GO'
             res.ed += 1
-            res.prev_str = recv if log else ''
             try:
                 accept = target(recv, res.to_param())
             except TypeError:
@@ -101,14 +93,14 @@ def make_gen(target, num_t: tuple, name):
     if num_t == (1, 1):
         return gen
     else:
-        def decorate_gen(prev_res: Res, log: bool):
+        def decorate_gen(prev_res: Res):
             from_num, to_num = explain_n(prev_res, num_t)
             curr_state = 'OPT' if from_num == 0 else 'GO'
             if to_num == 0:
                 yield curr_state
 
             counter = 0
-            inner_gen = gen(prev_res, log)
+            inner_gen = gen(prev_res)
             next(inner_gen)
             while counter < to_num:
                 recv = yield curr_state
@@ -117,7 +109,7 @@ def make_gen(target, num_t: tuple, name):
                     counter += 1
                     if counter < to_num:
                         inner_gen = gen(echo if name is None else
-                                        echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed))), log)
+                                        echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed))))
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
@@ -334,14 +326,14 @@ class R:
             s += str(self.next_r)
         return s
 
-    def broadcast(self, char=None):
+    def broadcast(self, char=None, prev_str=None):
         if char is None:
             if self.is_matcher:
                 self.fa_l.clear()
             if self.mode is not Mode.All:
                 self.best_length = None
         if self.next_r:
-            next_res_l = self.next_r.broadcast(char)
+            next_res_l = self.next_r.broadcast(char, prev_str)
 
         if self.is_matcher:
             self_res_l = []
@@ -355,7 +347,7 @@ class R:
                         self_res_l.append(echo)
                 self.fa_l = fa_l
         else:
-            self_res_l = self.target_rule.broadcast(char)
+            self_res_l = self.target_rule.broadcast(char, prev_str)
             res_l = []
             for res in self_res_l:
                 if not res:
@@ -373,9 +365,9 @@ class R:
 
         if self.xor_r:
             for res in self_res_l:
-                self.xor_r.active(res.clone(ed=res.op, prev_str='', capture_t=()))
-                for char in res.prev_str:
-                    xor_res_l = self.xor_r.broadcast(char)
+                self.xor_r.active(res.clone(ed=res.op, capture_t=()))
+                for char in prev_str[res.op + 1:res.ed + 1]:
+                    xor_res_l = self.xor_r.broadcast(char, prev_str)
                 self.xor_r.broadcast()
 
                 if res:
@@ -400,9 +392,9 @@ class R:
                     if not res:
                         continue
                     else:
-                        self.and_r.active(res.clone(ed=res.op, prev_str='', capture_t=()))
-                        for char in res.prev_str:
-                            and_res_l = self.and_r.broadcast(char)
+                        self.and_r.active(res.clone(ed=res.op, capture_t=()))
+                        for char in prev_str[res.op + 1:res.ed + 1]:
+                            and_res_l = self.and_r.broadcast(char, prev_str)
                         self.and_r.broadcast()
 
                         res.as_fail()
@@ -411,7 +403,7 @@ class R:
                                 res.as_success()
                                 res.capture_t += and_res.capture_t
             for or_r in self.or_r_l:
-                or_r_res_l = or_r.broadcast(char)
+                or_r_res_l = or_r.broadcast(char, prev_str)
                 self_res_l.extend(or_r_res_l)
 
         for res in filter(bool, self_res_l):
@@ -428,7 +420,7 @@ class R:
             while seed_res_l:
                 res_l = []
                 for res in seed_res_l:
-                    echo = next_r.active(res.clone(op=res.ed, prev_str=''))
+                    echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(capture_t=((curr_r, 0), *res.capture_t)))
@@ -444,15 +436,14 @@ class R:
         else:
             return self_res_l
 
-    def active(self, prev_res: Res, log=False, affect=True):
-        log = bool(log or self.and_r or self.xor_r)
+    def active(self, prev_res: Res, affect=True):
         if self.is_matcher:
-            fa = self.gen(prev_res, log)
+            fa = self.gen(prev_res)
             echo = next(fa)
             if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res, log, affect)
+            echo = self.target_rule.active(prev_res, affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
@@ -480,10 +471,12 @@ class R:
     def match(self, source: Iterable):
         self.is_top = True
         res_l = []
+        prev_str = []
         for i, char in enumerate(chain([EOF], source, [EOF])):
             i -= 1
+            prev_str.append(char)
             self.active(Res(i, i))
-            res_l.extend(agl_update(self.broadcast(char)))
+            res_l.extend(agl_update(self.broadcast(char, prev_str)))
         res_l = agl_filter(res_l)
         self.broadcast()
         self.is_top = False

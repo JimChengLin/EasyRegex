@@ -95,9 +95,14 @@ def t_lazy():
 
 
 def t_or_and():
-    m = (_('abc') | _('abb')) & _('abc')
-    assert str(m) == '[abc|abb]&abc'
-    assert str(m.match('abc')) == '[FT(0, 3)]'
+    # m = (_('abc') | _('abb')) & _('abc')
+    # assert str(m) == '[abc|abb]&abc'
+    # assert str(m.match('abc')) == '[FT(0, 3)]'
+
+    alpha = _(lambda x, _: str.isalpha(x), '+')
+    m = _(_(alpha)('abc')) & _(_('abc')(alpha))
+    print(m)
+    print(m.match('abcaabcd'))
 
 
 def t_xor():
@@ -109,20 +114,20 @@ def t_invert():
 
 
 for func in (
-        t_str,
-        t_abc,
-        t_abcda,
-        t_abc_bbc,
-        t_b_2_cd,
-        t_opt_abc_bc,
-        t_ab_c_star_c_plus,
-        t_abc_and_abc,
-        t_b_2_cd_counter,
-        t_letter_123,
-        t_ignore_c,
-        t_str_num,
-        t_num_func,
-        t_lazy,
+        # t_str,
+        # t_abc,
+        # t_abcda,
+        # t_abc_bbc,
+        # t_b_2_cd,
+        # t_opt_abc_bc,
+        # t_ab_c_star_c_plus,
+        # t_abc_and_abc,
+        # t_b_2_cd_counter,
+        # t_letter_123,
+        # t_ignore_c,
+        # t_str_num,
+        # t_num_func,
+        # t_lazy,
         t_or_and,
 ):
     func()
