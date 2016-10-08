@@ -262,7 +262,7 @@ class R:
         other = other.clone()
         self_clone = self.clone()
         if self_clone.or_r_l:
-            cursor = R(self_clone)
+            cursor = self_clone = R(self_clone)
         else:
             cursor = self_clone
             while cursor.and_r is not None:

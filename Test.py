@@ -94,6 +94,12 @@ def t_lazy():
     assert str(m.match('ab123a')) == '[FT(2, 5)]'
 
 
+def t_or_and():
+    m = (_('abc') | _('abb')) & _('abc')
+    assert str(m) == '[abc|abb]&abc'
+    assert str(m.match('abc')) == '[FT(0, 3)]'
+
+
 for func in (
         t_str,
         t_abc,
@@ -109,5 +115,6 @@ for func in (
         t_str_num,
         t_num_func,
         t_lazy,
+        t_or_and,
 ):
     func()
