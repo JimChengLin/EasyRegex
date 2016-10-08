@@ -180,11 +180,35 @@ class Mode(Enum):
 
 
 def gl_update(res_l: list):
-    return filter(bool, res_l)
+    update_res_l = []
+    for res in filter(bool, res_l):
+        for k, *item in res.capture_t:
+            if isinstance(k, str):
+                break
+            op, length = item
+            k.length_d[op] = max(length, k.length_d.get(op, 0)) if k.mode is Mode.Greedy else \
+                min(length, k.length_d.get(op, inf))
+        update_res_l.append(res)
+    return update_res_l
 
 
 def gl_filter(res_l: list):
-    return res_l
+    filter_res_l = []
+    for res in res_l:
+        for k, *item in res.capture_t:
+            if isinstance(k, str):
+                filter_res_l.append(res)
+                break
+            op, length = item
+            if k.mode is Mode.Greedy:
+                if length < k.length_d.get(op, 0):
+                    break
+            else:
+                if length > k.length_d.get(op, inf):
+                    break
+        else:
+            filter_res_l.append(res)
+    return filter_res_l
 
 
 class R:
@@ -206,7 +230,7 @@ class R:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num_t)
         if self.mode is not Mode.All:
-            self.len_d = {}
+            self.length_d = {}
 
     @property
     def is_matcher(self):
@@ -309,7 +333,7 @@ class R:
             if self.is_matcher:
                 self.fa_l.clear()
             if self.mode is not Mode.All:
-                self.len_d.clear()
+                self.length_d.clear()
         if self.next_r:
             next_res_l = self.next_r.broadcast(char)
 
