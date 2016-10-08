@@ -62,8 +62,7 @@ class Fail(Res):
 
 
 def concat(prev_str, recv):
-    result = (*prev_str, recv) if isinstance(prev_str, tuple) or not isinstance(recv, str) else prev_str + recv
-    return result
+    return (*prev_str, recv) if isinstance(prev_str, tuple) or not isinstance(recv, str) else prev_str + recv
 
 
 def make_gen(target, num_t: tuple):
@@ -183,7 +182,7 @@ class Mode(Enum):
     Lazy = 'L'
 
 
-def gl_update(res_l: list):
+def agl_update(res_l: list):
     update_res_l = []
     for res in filter(bool, res_l):
         for k, *item in res.capture_t:
@@ -196,7 +195,7 @@ def gl_update(res_l: list):
     return update_res_l
 
 
-def gl_filter(res_l: list):
+def agl_filter(res_l: list):
     filter_res_l = []
     for res in res_l:
         for k, *item in res.capture_t:
@@ -363,11 +362,8 @@ class R:
                     from_num, to_num = explain_n(res, self.num_t)
                     res.nth += 1
                     if res.nth < to_num:
-                        if self.name and from_num <= res.nth <= to_num:
-                            seed = res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
-                        else:
-                            seed = res
-                        self.active(seed)
+                        self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
+                                    if self.name and from_num <= res.nth else res)
                     if from_num <= res.nth <= to_num:
                         res.nth = 0  # 已激活
                         res_l.append(res)
@@ -375,7 +371,7 @@ class R:
 
         if self.xor_r:
             for res in self_res_l:
-                self.xor_r.active(res.clone(ed=res.op, prev_str=''))
+                self.xor_r.active(res.clone(ed=res.op, prev_str='', capture_t=()))
                 for char in res.prev_str:
                     xor_res_l = self.xor_r.broadcast(char)
                 self.xor_r.broadcast()
@@ -402,7 +398,7 @@ class R:
                     if not res:
                         continue
                     else:
-                        self.and_r.active(res.clone(ed=res.op, prev_str=''))
+                        self.and_r.active(res.clone(ed=res.op, prev_str='', capture_t=()))
                         for char in res.prev_str:
                             and_res_l = self.and_r.broadcast(char)
                         self.and_r.broadcast()
@@ -421,7 +417,7 @@ class R:
                 res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
             if self.mode is not Mode.All:
                 res.capture_t = ((self, res.ed - res.op), *res.capture_t)
-        self_res_l = gl_filter(self_res_l)
+        self_res_l = agl_filter(self_res_l)
 
         if self.next_r:
             curr_r = self
@@ -485,8 +481,8 @@ class R:
         for i, char in enumerate(chain([EOF], source, [EOF])):
             i -= 1
             self.active(Res(i, i))
-            res_l.extend(gl_update(self.broadcast(char)))
-        res_l = gl_filter(res_l)
+            res_l.extend(agl_update(self.broadcast(char)))
+        res_l = agl_filter(res_l)
         self.broadcast()
         self.is_top = False
         return res_l
