@@ -1,3 +1,4 @@
+from enum import Enum
 from itertools import chain
 from math import inf
 from typing import Iterable, Callable
@@ -37,6 +38,9 @@ class Res:
     def as_fail(self):
         self.__class__ = Fail
         return self
+
+    def as_param(self):
+        return self.epoch, self.ed, self.capture_d
 
 
 class Success(Res):
@@ -80,7 +84,7 @@ def make_gen(target, num_t: tuple):
             recv = yield 'GO'
             res.ed += 1
             res.prev_str = recv if log else ''
-            if target(recv, prev_res):
+            if target(recv, res.as_param()):
                 yield res.as_success()
             else:
                 yield res.as_fail()
@@ -162,16 +166,20 @@ def explain_n(res: Res, num_t: tuple):
     if isinstance(from_num, str):
         from_num = to_num = len(res.capture_d.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(res), to_num(res)
+        from_num, to_num = from_num(res.as_param()), to_num(res.as_param())
     assert 0 <= from_num <= to_num
     return from_num, to_num
 
 
+Mode = Enum('Mode', ('All', 'Greedy', 'Lazy'))
+
+
 class R:
-    def __init__(self, target_rule, num=None, name: str = None):
+    def __init__(self, target_rule, num=None, name: str = None, mode=Mode.All):
         self.target_rule = target_rule
         self.num_t = parse_n(num)
         self.name = name
+        self.mode = mode
 
         self.and_r = None
         self.or_r_l = []
