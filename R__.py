@@ -17,8 +17,10 @@ class Res:
     @property
     def capture_d(self):
         d = {}
-        for k, op, ed in self.capture_t:
-            d.setdefault(k, []).append((op, ed))
+        for k, *item in self.capture_t:
+            if isinstance(k, str):
+                op, ed = item
+                d.setdefault(k, []).append((op, ed))
         return d
 
     def __repr__(self):
@@ -175,6 +177,14 @@ class Mode(Enum):
     All = 'A'
     Greedy = 'G'
     Lazy = 'L'
+
+
+def gl_update(res_l: list):
+    return filter(bool, res_l)
+
+
+def gl_filter(res_l: list):
+    return res_l
 
 
 class R:
@@ -377,9 +387,12 @@ class R:
                 or_r_res_l = or_r.broadcast(char)
                 self_res_l.extend(or_r_res_l)
 
-        if self.name:
-            for res in filter(bool, self_res_l):
+        for res in filter(bool, self_res_l):
+            if self.name:
                 res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
+            if self.mode is not Mode.All:
+                res.capture_t = ((self, res.op, res.ed - res.op), *res.capture_t)
+        self_res_l = gl_filter(self_res_l)
         if self.next_r:
             next_r = self.next_r
             seed_res_l = list(filter(bool, self_res_l))
@@ -438,10 +451,10 @@ class R:
         for i, char in enumerate(chain([EOF], source, [EOF])):
             i -= 1
             self.active(Res(i, i))
-            res_l.extend(filter(bool, self.broadcast(char)))
+            res_l.extend(gl_update(self.broadcast(char)))
         self.broadcast()
         self.is_top = False
-        return res_l
+        return gl_filter(res_l)
 
     def clone(self):
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name, self.mode)
