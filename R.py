@@ -326,6 +326,8 @@ class R:
         if num_str:
             if len(s) > 1 and not is_group():
                 s = group()
+            if self.mode is not Mode.All:
+                s = '{}:{}'.format(s, self.mode.value)
             s += num_str
         if self.next_r:
             s += str(self.next_r)
@@ -490,7 +492,8 @@ class R:
         return res_l
 
     def clone(self):
-        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name, self.mode)
+        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(),
+                    self.num_t, self.name, self.mode)
         if self.and_r:
             matcher.and_r = self.and_r.clone()
         matcher.or_r_l[:] = (i.clone() for i in self.or_r_l)

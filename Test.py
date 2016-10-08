@@ -73,9 +73,10 @@ def test_letter_123():
     matcher = _(lambda x, _: str.isalpha(x), '*')(_('123'))
     assert str(matcher.match('atfgy123a')) == '[FT(0, 8), FT(1, 8), FT(2, 8), FT(3, 8), FT(4, 8), FT(5, 8)]'
     matcher = _(lambda x, _: str.isalpha(x), '*', mode=Mode.Greedy)(_('123'))
-    print(matcher.match('ab123a'))
+    assert str(matcher.match('ab123a')) == '[FT(0, 5)]'
     matcher = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Greedy)(_('123'))
-    print(matcher.match('ab123a'))
+    assert str(matcher) == '[%<lambda>%]:G{0,inf}123'
+    assert str(matcher.match('ab123a')) == '[FT(0, 5)]'
 
 
 for func in (
