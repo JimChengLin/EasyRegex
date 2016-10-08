@@ -189,9 +189,8 @@ def gl_update(res_l: list):
         for k, *item in res.capture_t:
             if isinstance(k, str):
                 break
-            op, length = item
-            k.length_d[op] = max(length, k.length_d.get(op, 0)) if k.mode is Mode.Greedy else \
-                min(length, k.length_d.get(op, inf))
+            v = item.pop()
+            k.best_length = max(v, k.best_length or 0) if k.mode is Mode.Greedy else min(v, k.best_length or inf)
         update_res_l.append(res)
     return update_res_l
 
@@ -203,12 +202,12 @@ def gl_filter(res_l: list):
             if isinstance(k, str):
                 filter_res_l.append(res)
                 break
-            op, length = item
+            v = item.pop()
             if k.mode is Mode.Greedy:
-                if length < k.length_d.get(op, 0):
+                if v < (k.best_length or 0):
                     break
             else:
-                if length > k.length_d.get(op, inf):
+                if v > (k.best_length or inf):
                     break
         else:
             filter_res_l.append(res)
@@ -234,7 +233,7 @@ class R:
             self.fa_l = []
             self.gen = make_gen(self.target_rule, self.num_t)
         if self.mode is not Mode.All:
-            self.length_d = {}
+            self.best_length = None
 
     @property
     def is_matcher(self):
@@ -337,7 +336,7 @@ class R:
             if self.is_matcher:
                 self.fa_l.clear()
             if self.mode is not Mode.All:
-                self.length_d.clear()
+                self.best_length = None
         if self.next_r:
             next_res_l = self.next_r.broadcast(char)
 
@@ -419,9 +418,10 @@ class R:
             if self.name:
                 res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
             if self.mode is not Mode.All:
-                res.capture_t = ((self, res.op, res.ed - res.op), *res.capture_t)
+                res.capture_t = ((self, res.ed - res.op), *res.capture_t)
         self_res_l = gl_filter(self_res_l)
         if self.next_r:
+            parent = self
             next_r = self.next_r
             seed_res_l = list(filter(bool, self_res_l))
             while seed_res_l:
@@ -429,9 +429,13 @@ class R:
                 for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed, prev_str=''))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
-                        res_l.append(res)
+                        if parent.mode is not Mode.All:
+                            res_l.append(res.clone(capture_t=((parent, 0), *res.capture_t)))
+                        else:
+                            res_l.append(res)
                 seed_res_l = res_l
                 if next_r.next_r:
+                    parent = next_r
                     next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
@@ -470,7 +474,10 @@ class R:
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
         if self.next_r and echo == 'OPT' and self.is_top:
-            self.next_r.active(prev_res)
+            if self.mode is not Mode.All:
+                self.next_r.active(prev_res.clone(capture_t=((self, 0), *prev_res.capture_t)))
+            else:
+                self.next_r.active(prev_res)
         return echo
 
     def match(self, source: Iterable):
@@ -480,9 +487,10 @@ class R:
             i -= 1
             self.active(Res(i, i))
             res_l.extend(gl_update(self.broadcast(char)))
+        res_l = gl_filter(res_l)
         self.broadcast()
         self.is_top = False
-        return gl_filter(res_l)
+        return res_l
 
     def clone(self):
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(), self.num_t, self.name, self.mode)

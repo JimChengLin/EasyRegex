@@ -1,4 +1,4 @@
-from R__ import R, Res as Result
+from R import R, Res as Result, Mode
 
 
 def test_str():
@@ -70,8 +70,12 @@ def test_b_2_cd_counter():
 
 def test_letter_123():
     _ = R
-    matcher = _(lambda x, _: str.isalpha(x) if isinstance(x, str) else False, '*')(_('123'))
+    matcher = _(lambda x, _: str.isalpha(x), '*')(_('123'))
     assert str(matcher.match('atfgy123a')) == '[FT(0, 8), FT(1, 8), FT(2, 8), FT(3, 8), FT(4, 8), FT(5, 8)]'
+    matcher = _(lambda x, _: str.isalpha(x), '*', mode=Mode.Greedy)(_('123'))
+    print(matcher.match('ab123a'))
+    matcher = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Greedy)(_('123'))
+    print(matcher.match('ab123a'))
 
 
 for func in (
