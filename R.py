@@ -157,7 +157,7 @@ def parse_n(num):
 def str_n(num_t: tuple):
     from_num, to_num = num_t
     if isinstance(from_num, Callable):
-        tpl = '<{}>'.format
+        tpl = '%{}%'.format
         from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
     if from_num == to_num:
         if from_num == 1:
@@ -188,9 +188,10 @@ def gl_update(res_l: list):
     for res in filter(bool, res_l):
         for k, *item in res.capture_t:
             if isinstance(k, str):
-                break
-            v = item.pop()
-            k.best_length = max(v, k.best_length or 0) if k.mode is Mode.Greedy else min(v, k.best_length or inf)
+                continue
+            length = item.pop()
+            k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
+                min(length, k.best_length or inf)
         update_res_l.append(res)
     return update_res_l
 
@@ -200,14 +201,13 @@ def gl_filter(res_l: list):
     for res in res_l:
         for k, *item in res.capture_t:
             if isinstance(k, str):
-                filter_res_l.append(res)
-                break
-            v = item.pop()
+                continue
+            length = item.pop()
             if k.mode is Mode.Greedy:
-                if v < (k.best_length or 0):
+                if length < (k.best_length or 0):
                     break
             else:
-                if v > (k.best_length or inf):
+                if length > (k.best_length or inf):
                     break
         else:
             filter_res_l.append(res)
@@ -300,7 +300,7 @@ class R:
 
     def __repr__(self):
         if self.is_matcher and isinstance(self.target_rule, Callable):
-            s = '<{}>'.format(self.target_rule.__name__)
+            s = '%{}%'.format(self.target_rule.__name__)
         else:
             s = str(self.target_rule)
 
@@ -420,8 +420,9 @@ class R:
             if self.mode is not Mode.All:
                 res.capture_t = ((self, res.ed - res.op), *res.capture_t)
         self_res_l = gl_filter(self_res_l)
+
         if self.next_r:
-            parent = self
+            curr_r = self
             next_r = self.next_r
             seed_res_l = list(filter(bool, self_res_l))
             while seed_res_l:
@@ -429,13 +430,11 @@ class R:
                 for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed, prev_str=''))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
-                        if parent.mode is not Mode.All:
-                            res_l.append(res.clone(capture_t=((parent, 0), *res.capture_t)))
-                        else:
-                            res_l.append(res)
+                        res_l.append(res if curr_r.mode is Mode.All else
+                                     res.clone(capture_t=((curr_r, 0), *res.capture_t)))
                 seed_res_l = res_l
                 if next_r.next_r:
-                    parent = next_r
+                    curr_r = next_r
                     next_r = next_r.next_r
                 else:
                     next_res_l.extend(res_l)
@@ -474,10 +473,8 @@ class R:
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
         if self.next_r and echo == 'OPT' and self.is_top:
-            if self.mode is not Mode.All:
-                self.next_r.active(prev_res.clone(capture_t=((self, 0), *prev_res.capture_t)))
-            else:
-                self.next_r.active(prev_res)
+            self.next_r.active(prev_res if self.mode is Mode.All else
+                               prev_res.clone(capture_t=((self, 0), *prev_res.capture_t)))
         return echo
 
     def match(self, source: Iterable):
