@@ -52,7 +52,6 @@ def t_abc_and_abc():
 
 def t_b_2_cd_counter():
     m = _('b', '{1,2}', '@b')(_('cd'))
-    print(m.match('bbcda'))
     assert str(m.match('bbcda')) == "[FT(0, 4){'@b': [(0, 1), (0, 2)]}, FT(1, 4){'@b': [(1, 2)]}]"
     m = _(_('b'), '{2}', '@b')(_('cd'))
     assert str(m.match('bbcda')) == "[FT(0, 4){'@b': [(0, 2)]}]"
@@ -83,10 +82,11 @@ def t_str_num():
 
 
 def t_num_func():
-    m = _('a', name='@a')(_('b', lambda _0, _1, d: len(d.get('@a', ())) + 1))
-    print(m.match('aabbbbb'))
-    m = _('a', '+', '@a')(_('b', lambda _0, _1, d: len(d.get('@a', ())) + 1))
-    print(m.match('aabbbbb'))
+    m = _('a', name='@a')(_('b', lambda epoch, ed, d: len(d.get('@a', ())) + 1))
+    assert str(m.match('aabbbbb')) == "[FT(1, 4){'@a': [(1, 2)]}]"
+    m = _('a', '+', '@a')(_('b', lambda epoch, ed, d: len(d.get('@a', ())) + 1))
+    assert str(m.match('aabbbbb')) == "[FT(1, 4){'@a': [(1, 2)]}, FT(0, 5){'@a': [(0, 1), (0, 2)]}]"
+    assert str(m) == 'a{1,inf}b{%<lambda>%}'
 
 
 for func in (
