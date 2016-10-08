@@ -67,7 +67,7 @@ def t_letter_123():
     m = _(lambda x, _: str.isalpha(x), '*', mode=Mode.Greedy)(_('123'))
     assert str(m.match('ab123a')) == '[FT(0, 5)]'
     m = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Greedy)(_('123'))
-    assert str(m) == '[%<lambda>%]:G{0,inf}123'
+    assert str(m) == '[%<lambda>%]:G:{0,inf}123'
     assert str(m.match('ab123a')) == '[FT(0, 5)]'
 
 
@@ -98,6 +98,14 @@ def t_or_and():
     m = (_('abc') | _('abb')) & _('abc')
     assert str(m) == '[abc|abb]&abc'
     assert str(m.match('abc')) == '[FT(0, 3)]'
+
+
+def t_xor():
+    pass
+
+
+def t_invert():
+    pass
 
 
 for func in (

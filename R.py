@@ -328,7 +328,7 @@ class R:
             if len(s) > 1 and not is_group():
                 s = group()
             if self.mode is not Mode.All:
-                s = '{}:{}'.format(s, self.mode.value)
+                s = '{}:{}:'.format(s, self.mode.value)
             s += num_str
         if self.next_r:
             s += str(self.next_r)
