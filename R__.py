@@ -86,7 +86,11 @@ def make_gen(target, num_t: tuple):
             recv = yield 'GO'
             res.ed += 1
             res.prev_str = recv if log else ''
-            if target(recv, res.to_param()):
+            try:
+                accept = target(recv, res.to_param())
+            except TypeError:
+                accept = False
+            if accept:
                 yield res.as_success()
             else:
                 yield res.as_fail()
