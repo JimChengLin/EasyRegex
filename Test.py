@@ -101,11 +101,11 @@ def t_or_and():
 
     alpha = _(lambda x, _: str.isalpha(x), '+')
     m = _(_(alpha)('abc')) & _(_('abc')(alpha))
-    print(m)
-    print(m.match('abcaabcd'))
+    assert str(m) == '[%<lambda>%]{1,inf}abc&abc[%<lambda>%]{1,inf}'
+    assert str(m.match('abcaabcd')) == '[FT(0, 7)]'
     m = _(_(alpha)('abc')) & _(_('abc')(alpha)) & _(_('abc')(alpha))
-    print(m)
-    print(m.match('abcaabcd'))
+    assert str(m) == '[%<lambda>%]{1,inf}abc&abc[%<lambda>%]{1,inf}&abc[%<lambda>%]{1,inf}'
+    assert str(m.match('abcaabcd')) == '[FT(0, 7)]'
 
 
 def t_xor():
