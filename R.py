@@ -363,11 +363,11 @@ class R:
 
         if self.xor_r:
             for res in self_res_l:
-                self.xor_r.active(res.clone(ed=res.op, capture_t=()))
                 for k, *item in res.capture_t:
                     if isinstance(k, int) and k == id(self):
                         op = item[0]
                         break
+                self.xor_r.active(res.clone(ed=res.op, capture_t=(*res.capture_t, (id(self.xor_r), op))))
                 for char in prev_l[op + 1:res.ed + 1]:
                     xor_res_l = self.xor_r.broadcast(char, prev_l)
                 self.xor_r.broadcast()
@@ -421,15 +421,15 @@ class R:
         if self.next_r:
             curr_r = self
             next_r = self.next_r
-            seed_l = list(filter(bool, self_res_l))
-            while seed_l:
+            seeds = filter(bool, self_res_l)
+            while seeds:
                 res_l = []
-                for res in seed_l:
+                for res in seeds:
                     echo = next_r.active(res.clone(op=res.ed, capture_t=(*res.capture_t, (id(next_r), index))))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(capture_t=(*res.capture_t, (curr_r, 0))))
-                seed_l = res_l
+                seeds = res_l
                 if next_r.next_r:
                     curr_r = next_r
                     next_r = next_r.next_r
