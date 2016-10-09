@@ -182,7 +182,7 @@ def agl_update(res_l: list):
         for k, *item in res.capture_t:
             if isinstance(k, (str, int)):
                 continue
-            length = item[0]
+            length, = item
             k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
                 min(length, k.best_length if k.best_length is not None else inf)
         update_res_l.append(res)
@@ -195,7 +195,7 @@ def agl_filter(res_l: list):
         for k, *item in res.capture_t:
             if isinstance(k, (str, int)):
                 continue
-            length = item[0]
+            length, = item
             if k.mode is Mode.Greedy:
                 if length < (k.best_length or 0):
                     break
@@ -425,7 +425,7 @@ class R:
             while seeds:
                 res_l = []
                 for res in seeds:
-                    echo = next_r.active(res.clone(op=res.ed, capture_t=(*res.capture_t, (id(next_r), res.ed))))
+                    echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(capture_t=(*res.capture_t, (curr_r, 0))))
