@@ -108,8 +108,8 @@ def make_gen(target, num_t: tuple, name: str):
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
-                        inner_gen = gen(echo if name is None else
-                                        echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed))))
+                        inner_gen = gen(echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed)))
+                                        if name and from_num <= counter else echo)
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'
