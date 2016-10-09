@@ -61,7 +61,7 @@ class Fail(Res):
         return False
 
 
-def make_gen(target, num_t: tuple, name):
+def make_gen(target, num_t: tuple, name: str):
     if isinstance(target, Iterable):
         def gen(prev_res: Res):
             res = prev_res.clone()
@@ -182,9 +182,9 @@ def agl_update(res_l: list):
         for k, *item in res.capture_t:
             if isinstance(k, (str, int)):
                 continue
-            length = item.pop()
+            length = item[0]
             k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
-                min(length, k.best_length or inf)
+                min(length, k.best_length if k.best_length is not None else inf)
         update_res_l.append(res)
     return update_res_l
 
@@ -195,7 +195,7 @@ def agl_filter(res_l: list):
         for k, *item in res.capture_t:
             if isinstance(k, (str, int)):
                 continue
-            length = item.pop()
+            length = item[0]
             if k.mode is Mode.Greedy:
                 if length < (k.best_length or 0):
                     break
