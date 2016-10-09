@@ -367,7 +367,8 @@ class R:
                     if isinstance(k, int) and k == id(self):
                         op = item[0]
                         break
-                self.xor_r.active(res.clone(ed=res.op, capture_t=((id(self.xor_r), op),)))
+                self.xor_r.active(res.clone(ed=res.op, capture_t=(
+                    (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
                 for char in char_l[op + 1:res.ed + 1]:
                     xor_res_l = self.xor_r.broadcast(char, char_l)
                 self.xor_r.broadcast()
@@ -398,7 +399,8 @@ class R:
                             if isinstance(k, int) and k == id(self):
                                 op = item[0]
                                 break
-                        self.and_r.active(res.clone(ed=res.op, capture_t=((id(self.and_r), op),)))
+                        self.and_r.active(res.clone(ed=res.op, capture_t=(
+                            (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
                         for char in char_l[op + 1:res.ed + 1]:
                             and_res_l = self.and_r.broadcast(char, char_l)
                         self.and_r.broadcast()
@@ -442,8 +444,9 @@ class R:
             return self_res_l
 
     def active(self, prev_res: Res, affect=True):
-        capture_t = prev_res.capture_t if prev_res.capture_t and prev_res.capture_t[-1][0] == id(self) else \
-            (*prev_res.capture_t, (id(self), prev_res.ed))
+        capture_t = prev_res.capture_t
+        if (self.and_r or self.xor_r) and (not capture_t or capture_t[-1][0] != id(self)):
+            capture_t = (*capture_t, (id(self), prev_res.ed))
         if self.is_matcher:
             fa = self.gen(prev_res.clone(capture_t=capture_t))
             echo = next(fa)
