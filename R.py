@@ -366,6 +366,7 @@ class R:
         if self.xor_r:
             for res in self_res_l:
                 self.xor_r.active(res.clone(ed=res.op, capture_t=()))
+                op = res.op
                 for k, *item in res.capture_t:
                     if isinstance(k, int) and k == id(self):
                         op = item.pop()
@@ -396,7 +397,10 @@ class R:
                     if not res:
                         continue
                     else:
-                        self.and_r.active(res.clone(ed=res.op, capture_t=()))
+                        res_clone = res.clone(ed=res.op, capture_t=())
+                        res_clone.capture_t = ((id(self.and_r), res.op),)
+                        self.and_r.active(res_clone)
+                        op = res.op
                         for k, *item in res.capture_t:
                             if isinstance(k, int) and k == id(self):
                                 op = item.pop()
