@@ -324,14 +324,14 @@ class R:
             s += str(self.next_r)
         return s
 
-    def broadcast(self, char=None, prev_l: list = None, index: int = None):
+    def broadcast(self, char=None, prev_l: list = None):
         if char is None:
             if self.is_matcher:
                 self.fa_l.clear()
             if self.mode is not Mode.All:
                 self.best_length = None
         if self.next_r:
-            next_res_l = self.next_r.broadcast(char, prev_l, index)
+            next_res_l = self.next_r.broadcast(char, prev_l)
 
         if self.is_matcher:
             self_res_l = []
@@ -345,7 +345,7 @@ class R:
                         self_res_l.append(echo)
                 self.fa_l = fa_l
         else:
-            self_res_l = self.target_rule.broadcast(char, prev_l, index)
+            self_res_l = self.target_rule.broadcast(char, prev_l)
             res_l = []
             for res in self_res_l:
                 if not res:
@@ -425,7 +425,7 @@ class R:
             while seeds:
                 res_l = []
                 for res in seeds:
-                    echo = next_r.active(res.clone(op=res.ed, capture_t=(*res.capture_t, (id(next_r), index))))
+                    echo = next_r.active(res.clone(op=res.ed, capture_t=(*res.capture_t, (id(next_r), res.ed))))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(capture_t=(*res.capture_t, (curr_r, 0))))
@@ -482,7 +482,7 @@ class R:
             i -= 1
             prev_l.append(char)
             self.active(Res(i, i, capture_t=((id(self), i),)))
-            res_l.extend(agl_update(self.broadcast(char, prev_l, i)))
+            res_l.extend(agl_update(self.broadcast(char, prev_l)))
         res_l = agl_filter(res_l)
         self.broadcast()
         self.is_top = False
