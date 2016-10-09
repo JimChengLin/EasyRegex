@@ -442,14 +442,15 @@ class R:
             return self_res_l
 
     def active(self, prev_res: Res, affect=True):
+        capture_t = prev_res.capture_t if prev_res.capture_t and prev_res.capture_t[-1][0] == id(self) else \
+            (*prev_res.capture_t, (id(self), prev_res.ed))
         if self.is_matcher:
-            fa = self.gen(prev_res.clone(capture_t=(*prev_res.capture_t, (id(self), prev_res.ed))))
+            fa = self.gen(prev_res.clone(capture_t=capture_t))
             echo = next(fa)
             if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res.clone(capture_t=(*prev_res.capture_t, (id(self), prev_res.ed))),
-                                           affect)
+            echo = self.target_rule.active(prev_res.clone(capture_t=capture_t), affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
