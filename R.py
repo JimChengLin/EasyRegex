@@ -367,7 +367,7 @@ class R:
                     if isinstance(k, int) and k == id(self):
                         op = item[0]
                         break
-                self.xor_r.active(res.clone(ed=res.op, capture_t=(*res.capture_t, (id(self.xor_r), op))))
+                self.xor_r.active(res.clone(ed=res.op, capture_t=((id(self.xor_r), op),)))
                 for char in prev_l[op + 1:res.ed + 1]:
                     xor_res_l = self.xor_r.broadcast(char, prev_l)
                 self.xor_r.broadcast()
@@ -398,7 +398,7 @@ class R:
                             if isinstance(k, int) and k == id(self):
                                 op = item[0]
                                 break
-                        self.and_r.active(res.clone(ed=res.op, capture_t=(*res.capture_t, (id(self.and_r), op))))
+                        self.and_r.active(res.clone(ed=res.op, capture_t=((id(self.and_r), op),)))
                         for char in prev_l[op + 1:res.ed + 1]:
                             and_res_l = self.and_r.broadcast(char, prev_l)
                         self.and_r.broadcast()
