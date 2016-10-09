@@ -367,10 +367,10 @@ class R:
                 op = res.op
                 for k, *item in res.capture_t:
                     if isinstance(k, int) and k == id(self):
-                        op = item.pop()
+                        op = item[0]
                         break
                 for char in prev_l[op + 1:res.ed + 1]:
-                    xor_res_l = self.xor_r.broadcast(char, prev_l)
+                    xor_res_l = self.xor_r.broadcast(char, prev_l, i)
                 self.xor_r.broadcast()
 
                 if res:
@@ -395,16 +395,14 @@ class R:
                     if not res:
                         continue
                     else:
-                        res_clone = res.clone(ed=res.op, capture_t=())
-                        res_clone.capture_t = ((id(self.and_r), res.op),)
-                        self.and_r.active(res_clone)
+                        self.and_r.active(res.clone(ed=res.op, capture_t=()))
                         op = res.op
                         for k, *item in res.capture_t:
                             if isinstance(k, int) and k == id(self):
-                                op = item.pop()
+                                op = item[0]
                                 break
                         for char in prev_l[op + 1:res.ed + 1]:
-                            and_res_l = self.and_r.broadcast(char, prev_l)
+                            and_res_l = self.and_r.broadcast(char, prev_l, i)
                         self.and_r.broadcast()
 
                         res.as_fail()
@@ -413,29 +411,27 @@ class R:
                                 res.as_success()
                                 res.capture_t += and_res.capture_t
             for or_r in self.or_r_l:
-                or_r_res_l = or_r.broadcast(char, prev_l)
-                self_res_l.extend(or_r_res_l)
+                self_res_l.extend(or_r.broadcast(char, prev_l))
 
         for res in filter(bool, self_res_l):
             if self.name:
                 res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
             if self.mode is not Mode.All:
-                res.capture_t = ((self, res.ed - res.op), *res.capture_t)
+                res.capture_t = (*res.capture_t, (self, res.ed - res.op))
         self_res_l = agl_filter(self_res_l)
 
         if self.next_r:
             curr_r = self
             next_r = self.next_r
-            seed_res_l = list(filter(bool, self_res_l))
-            while seed_res_l:
+            seed_l = list(filter(bool, self_res_l))
+            while seed_l:
                 res_l = []
-                for res in seed_res_l:
-                    res = res.clone(capture_t=(*res.capture_t, (id(next_r), i)))
-                    echo = next_r.active(res.clone(op=res.ed))
+                for res in seed_l:
+                    echo = next_r.active(res.clone(op=res.ed, capture_t=(*res.capture_t, (id(next_r), i))))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
-                                     res.clone(capture_t=((curr_r, 0), *res.capture_t)))
-                seed_res_l = res_l
+                                     res.clone(capture_t=(*res.capture_t, (curr_r, 0))))
+                seed_l = res_l
                 if next_r.next_r:
                     curr_r = next_r
                     next_r = next_r.next_r
@@ -476,7 +472,7 @@ class R:
                     echo = 'OPT'
         if self.next_r and echo == 'OPT' and self.is_top:
             self.next_r.active(prev_res if self.mode is Mode.All else
-                               prev_res.clone(capture_t=((self, 0), *prev_res.capture_t)))
+                               prev_res.clone(capture_t=(*prev_res.capture_t, (self, 0))))
         return echo
 
     def match(self, source: Iterable):
