@@ -369,7 +369,7 @@ class R:
                         op = item[0]
                         break
                 for char in prev_l[op + 1:res.ed + 1]:
-                    xor_res_l = self.xor_r.broadcast(char, prev_l, index)
+                    xor_res_l = self.xor_r.broadcast(char, prev_l)
                 self.xor_r.broadcast()
 
                 if res:
@@ -398,9 +398,9 @@ class R:
                             if isinstance(k, int) and k == id(self):
                                 op = item[0]
                                 break
-                        self.and_r.active(res.clone(ed=res.op, capture_t=(*res.capture_t, (id(self.and_r), op))))
+                        self.and_r.active(res.clone(ed=res.op, capture_t=()))
                         for char in prev_l[op + 1:res.ed + 1]:
-                            and_res_l = self.and_r.broadcast(char, prev_l, index)
+                            and_res_l = self.and_r.broadcast(char, prev_l)
                         self.and_r.broadcast()
 
                         res.as_fail()
