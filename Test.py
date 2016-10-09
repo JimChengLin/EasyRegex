@@ -67,7 +67,7 @@ def t_letter_123():
     m = _(lambda x, _: str.isalpha(x), '*', mode=Mode.Greedy)(_('123'))
     assert str(m.match('ab123a')) == '[FT(0, 5)]'
     m = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Greedy)(_('123'))
-    assert str(m) == '[%<lambda>%]:G:{0,inf}123'
+    assert str(m) == '[%<lambda>%]{0,inf}123'
     assert str(m.match('ab123a')) == '[FT(0, 5)]'
 
 

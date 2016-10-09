@@ -310,17 +310,15 @@ class R:
         else:
             if self.and_r:
                 s = '{}&{}'.format(s, self.and_r)
-            if self.or_r_l:
-                s = '[{}|{}]'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
             if (self.and_r or (self.is_wrapper and self.target_rule.and_r)) and self.next_r and not is_group():
                 s = group()
+            if self.or_r_l:
+                s = '[{}|{}]'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
 
         num_str = str_n(self.num_t)
         if num_str:
             if len(s) > 1 and not is_group():
                 s = group()
-            if self.mode is not Mode.All:
-                s = '{}:{}:'.format(s, self.mode.value)
             s += num_str
         if self.next_r:
             s += str(self.next_r)
