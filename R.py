@@ -180,7 +180,7 @@ def agl_update(res_l: list):
     update_res_l = []
     for res in filter(bool, res_l):
         for k, *item in res.capture_t:
-            if isinstance(k, str):
+            if isinstance(k, (str, int)):
                 continue
             length = item.pop()
             k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
@@ -193,7 +193,7 @@ def agl_filter(res_l: list):
     filter_res_l = []
     for res in res_l:
         for k, *item in res.capture_t:
-            if isinstance(k, str):
+            if isinstance(k, (str, int)):
                 continue
             length = item.pop()
             if k.mode is Mode.Greedy:
@@ -326,14 +326,14 @@ class R:
             s += str(self.next_r)
         return s
 
-    def broadcast(self, char=None, prev_str=None):
+    def broadcast(self, char=None, prev_str=None, i=None):
         if char is None:
             if self.is_matcher:
                 self.fa_l.clear()
             if self.mode is not Mode.All:
                 self.best_length = None
         if self.next_r:
-            next_res_l = self.next_r.broadcast(char, prev_str)
+            next_res_l = self.next_r.broadcast(char, prev_str, i)
 
         if self.is_matcher:
             self_res_l = []
@@ -347,7 +347,7 @@ class R:
                         self_res_l.append(echo)
                 self.fa_l = fa_l
         else:
-            self_res_l = self.target_rule.broadcast(char, prev_str)
+            self_res_l = self.target_rule.broadcast(char, prev_str, i)
             res_l = []
             for res in self_res_l:
                 if not res:
@@ -366,7 +366,11 @@ class R:
         if self.xor_r:
             for res in self_res_l:
                 self.xor_r.active(res.clone(ed=res.op, capture_t=()))
-                for char in prev_str[res.op + 1:res.ed + 1]:
+                for k, *item in res.capture_t:
+                    if isinstance(k, int) and k == id(self):
+                        op = item.pop()
+                        break
+                for char in prev_str[op + 1:res.ed + 1]:
                     xor_res_l = self.xor_r.broadcast(char, prev_str)
                 self.xor_r.broadcast()
 
@@ -393,7 +397,11 @@ class R:
                         continue
                     else:
                         self.and_r.active(res.clone(ed=res.op, capture_t=()))
-                        for char in prev_str[res.op + 1:res.ed + 1]:
+                        for k, *item in res.capture_t:
+                            if isinstance(k, int) and k == id(self):
+                                op = item.pop()
+                                break
+                        for char in prev_str[op + 1:res.ed + 1]:
                             and_res_l = self.and_r.broadcast(char, prev_str)
                         self.and_r.broadcast()
 
@@ -420,6 +428,7 @@ class R:
             while seed_res_l:
                 res_l = []
                 for res in seed_res_l:
+                    res = res.clone(capture_t=(*res.capture_t, (id(next_r), i)))
                     echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
@@ -475,8 +484,8 @@ class R:
         for i, char in enumerate(chain([EOF], source, [EOF])):
             i -= 1
             prev_str.append(char)
-            self.active(Res(i, i))
-            res_l.extend(agl_update(self.broadcast(char, prev_str)))
+            self.active(Res(i, i, capture_t=((id(self), i),)))
+            res_l.extend(agl_update(self.broadcast(char, prev_str, i)))
         res_l = agl_filter(res_l)
         self.broadcast()
         self.is_top = False
