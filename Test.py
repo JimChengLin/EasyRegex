@@ -95,12 +95,15 @@ def t_lazy():
 
 
 def t_or_and():
-    # m = (_('abc') | _('abb')) & _('abc')
-    # assert str(m) == '[abc|abb]&abc'
-    # assert str(m.match('abc')) == '[FT(0, 3)]'
+    m = (_('abc') | _('abb')) & _('abc')
+    assert str(m) == '[abc|abb]&abc'
+    assert str(m.match('abc')) == '[FT(0, 3)]'
 
     alpha = _(lambda x, _: str.isalpha(x), '+')
     m = _(_(alpha)('abc')) & _(_('abc')(alpha))
+    print(m)
+    print(m.match('abcaabcd'))
+    m = _(_(alpha)('abc')) & _(_('abc')(alpha)) & _(_('abc')(alpha))
     print(m)
     print(m.match('abcaabcd'))
 

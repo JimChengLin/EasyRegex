@@ -364,7 +364,6 @@ class R:
         if self.xor_r:
             for res in self_res_l:
                 self.xor_r.active(res.clone(ed=res.op, capture_t=()))
-                op = res.op
                 for k, *item in res.capture_t:
                     if isinstance(k, int) and k == id(self):
                         op = item[0]
@@ -395,12 +394,11 @@ class R:
                     if not res:
                         continue
                     else:
-                        self.and_r.active(res.clone(ed=res.op, capture_t=()))
-                        op = res.op
                         for k, *item in res.capture_t:
                             if isinstance(k, int) and k == id(self):
                                 op = item[0]
                                 break
+                        self.and_r.active(res.clone(ed=res.op, capture_t=(*res.capture_t, (id(self.and_r), op))))
                         for char in prev_l[op + 1:res.ed + 1]:
                             and_res_l = self.and_r.broadcast(char, prev_l, i)
                         self.and_r.broadcast()
@@ -445,12 +443,13 @@ class R:
 
     def active(self, prev_res: Res, affect=True):
         if self.is_matcher:
-            fa = self.gen(prev_res)
+            fa = self.gen(prev_res.clone(capture_t=(*prev_res.capture_t, (id(self), prev_res.ed))))
             echo = next(fa)
             if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res, affect)
+            echo = self.target_rule.active(prev_res.clone(capture_t=(*prev_res.capture_t, (id(self), prev_res.ed))),
+                                           affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
