@@ -117,28 +117,28 @@ def t_invert():
     # assert str(no_alpha.match('123456')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3), ' \
     #                                         'FT(3, 4), FT(4, 5), FT(5, 6), FT(6, 7)]'
     mul_no_alpha = _(no_alpha, '+')
-    print(mul_no_alpha.match('123456'))
+    print(mul_no_alpha.match('12'))
 
-    mul_no_alpha = _(lambda x, _: not str.isalpha(x))
-    print(mul_no_alpha.match('123456'))
+    # mul_no_alpha = _(lambda x, _: not str.isalpha(x), '+')
+    # print(mul_no_alpha.match('123'))
 
 
 for func in (
-        # t_str,
-        # t_abc,
-        # t_abcda,
-        # t_abc_bbc,
-        # t_b_2_cd,
-        # t_opt_abc_bc,
-        # t_ab_c_star_c_plus,
-        # t_abc_and_abc,
-        # t_b_2_cd_counter,
-        # t_letter_123,
-        # t_ignore_c,
-        # t_str_num,
-        # t_num_func,
-        # t_lazy,
-        # t_or_and,
-        t_invert,
+        t_str,
+        t_abc,
+        t_abcda,
+        t_abc_bbc,
+        t_b_2_cd,
+        t_opt_abc_bc,
+        t_ab_c_star_c_plus,
+        t_abc_and_abc,
+        t_b_2_cd_counter,
+        t_letter_123,
+        t_ignore_c,
+        t_str_num,
+        t_num_func,
+        t_lazy,
+        t_or_and,
+        # t_invert,
 ):
     func()
