@@ -365,7 +365,7 @@ class R:
             for res in self_res_l:
                 for k, *item in res.capture_t:
                     if isinstance(k, int) and k == id(self):
-                        op = item[0]
+                        op, = item
                         break
                 self.xor_r.active(res.clone(ed=res.op, capture_t=(
                     (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
@@ -397,7 +397,7 @@ class R:
                     else:
                         for k, *item in res.capture_t:
                             if isinstance(k, int) and k == id(self):
-                                op = item[0]
+                                op, = item
                                 break
                         self.and_r.active(res.clone(ed=res.op, capture_t=(
                             (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
@@ -444,16 +444,16 @@ class R:
             return self_res_l
 
     def active(self, prev_res: Res, affect=True):
-        capture_t = prev_res.capture_t
-        if (self.and_r or self.xor_r) and (not capture_t or capture_t[-1][0] != id(self)):
-            capture_t = (*capture_t, (id(self), prev_res.ed))
+        res = prev_res
+        if (self.and_r or self.xor_r) and (not res.capture_t or res.capture_t[-1][0] != id(self)):
+            res = res.clone(capture_t=(*res.capture_t, (id(self), res.ed)))
         if self.is_matcher:
-            fa = self.gen(prev_res.clone(capture_t=capture_t))
+            fa = self.gen(res)
             echo = next(fa)
             if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(prev_res.clone(capture_t=capture_t), affect)
+            echo = self.target_rule.active(res, affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
