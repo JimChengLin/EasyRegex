@@ -348,34 +348,6 @@ class R:
             self_res_l = self.target_rule.broadcast(char, char_l)
             res_l = []
             for res in self_res_l:
-
-                if self.xor_r:
-                    for k, *item in res.capture_t:
-                        if isinstance(k, int) and k == id(self):
-                            op, = item
-                            break
-                    self.xor_r.active(res.clone(ed=res.op, capture_t=(
-                        (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
-                    for char in char_l[op + 1:res.ed + 1]:
-                        xor_res_l = self.xor_r.broadcast(char, char_l)
-                    self.xor_r.broadcast()
-
-                    if res:
-                        res.as_fail()
-                        for xor_res in xor_res_l:
-                            if not xor_res:
-                                res.as_success()
-                                res.capture_t += xor_res.capture_t
-                        if not xor_res_l:
-                            res.as_success()
-                    else:
-                        for xor_res in xor_res_l:
-                            if xor_res:
-                                res.as_success()
-                                res.capture_t += xor_res.capture_t
-                elif self.invert:
-                    res.invert()
-
                 if not res:
                     res_l.append(res)
                 else:
@@ -389,28 +361,57 @@ class R:
                         res_l.append(res)
             self_res_l = res_l
 
-        if self.and_r:
+        if self.xor_r:
             for res in self_res_l:
-                if not res:
-                    continue
-                else:
-                    for k, *item in res.capture_t:
-                        if isinstance(k, int) and k == id(self):
-                            op, = item
-                            break
-                    self.and_r.active(res.clone(ed=res.op, capture_t=(
-                        (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
-                    for char in char_l[op + 1:res.ed + 1]:
-                        and_res_l = self.and_r.broadcast(char, char_l)
-                    self.and_r.broadcast()
+                for k, *item in res.capture_t:
+                    if isinstance(k, int) and k == id(self):
+                        op, = item
+                        break
+                self.xor_r.active(res.clone(ed=res.op, capture_t=(
+                    (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
+                for char in char_l[op + 1:res.ed + 1]:
+                    xor_res_l = self.xor_r.broadcast(char, char_l)
+                self.xor_r.broadcast()
 
+                if res:
                     res.as_fail()
-                    for and_res in and_res_l:
-                        if and_res:
+                    for xor_res in xor_res_l:
+                        if not xor_res:
                             res.as_success()
-                            res.capture_t += and_res.capture_t
-        for or_r in self.or_r_l:
-            self_res_l.extend(or_r.broadcast(char, char_l))
+                            res.capture_t += xor_res.capture_t
+                    if not xor_res_l:
+                        res.as_success()
+                else:
+                    for xor_res in xor_res_l:
+                        if xor_res:
+                            res.as_success()
+                            res.capture_t += xor_res.capture_t
+        elif self.invert:
+            for i in self_res_l:
+                i.invert()
+        else:
+            if self.and_r:
+                for res in self_res_l:
+                    if not res:
+                        continue
+                    else:
+                        for k, *item in res.capture_t:
+                            if isinstance(k, int) and k == id(self):
+                                op, = item
+                                break
+                        self.and_r.active(res.clone(ed=res.op, capture_t=(
+                            (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
+                        for char in char_l[op + 1:res.ed + 1]:
+                            and_res_l = self.and_r.broadcast(char, char_l)
+                        self.and_r.broadcast()
+
+                        res.as_fail()
+                        for and_res in and_res_l:
+                            if and_res:
+                                res.as_success()
+                                res.capture_t += and_res.capture_t
+            for or_r in self.or_r_l:
+                self_res_l.extend(or_r.broadcast(char, char_l))
 
         for res in filter(bool, self_res_l):
             if self.name:
