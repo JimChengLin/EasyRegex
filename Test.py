@@ -91,6 +91,7 @@ def t_num_func():
 
 def t_lazy():
     m = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Lazy)(_('123'))
+    print(m.match('ab123a'))
     assert str(m.match('ab123a')) == '[FT(2, 5)]'
 
 
