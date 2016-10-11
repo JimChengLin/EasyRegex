@@ -6,13 +6,14 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, capture_t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, capture_t=(), t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed if ed is not None else op
         self.nth = nth
         self.capture_t = capture_t
+        self.t = t
 
     @property
     def capture_d(self):
@@ -380,12 +381,16 @@ class R:
                     res_l.append(res)
                 else:
                     from_num, to_num = explain_n(res, self.num_t)
+                    res.t = (*res.t, id(self))
                     res.nth += 1
+                    print()
+                    assert res.t.count(id(self)) == res.nth
                     if res.nth < to_num:
                         self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
                                     if self.name and from_num <= res.nth else res)
                     if from_num <= res.nth <= to_num:
                         res.nth = 0  # 已激活
+                        res.t = tuple(i for i in res.t if i != id(self))
                         res_l.append(res)
             self_res_l = res_l
 
