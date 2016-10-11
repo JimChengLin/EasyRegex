@@ -6,11 +6,12 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, capture_t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, nth_t=(), nth=0, capture_t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed if ed is not None else op
+        self.nth_t = nth_t
         self.nth = nth
         self.capture_t = capture_t
 
@@ -22,6 +23,15 @@ class Res:
                 op, ed = item
                 d.setdefault(k, []).append((op, ed))
         return d
+
+    def get_nth(self, key: int):
+        for k, v in self.nth_t:
+            if k == key:
+                return v
+        return 0
+
+    def rp_nth(self, key: int, val: int):
+        self.nth_t = ((key, val), *((k, v) for k, v in self.nth_t if k != key))
 
     def __repr__(self):
         return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture_d or '')
@@ -380,12 +390,16 @@ class R:
                     res_l.append(res)
                 else:
                     from_num, to_num = explain_n(res, self.num_t)
+                    nth = res.get_nth(id(self)) + 1
+                    res.rp_nth(id(self), nth)
                     res.nth += 1
-                    if res.nth < to_num:
+                    print(res.nth,nth)
+                    if nth < to_num:
                         self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
-                                    if self.name and from_num <= res.nth else res)
-                    if from_num <= res.nth <= to_num:
+                                    if self.name and from_num <= nth else res)
+                    if from_num <= nth <= to_num:
                         res.nth = 0  # 已激活
+                        res.rp_nth(id(self), 0)
                         res_l.append(res)
             self_res_l = res_l
 

@@ -91,6 +91,7 @@ def t_num_func():
 
 def t_lazy():
     m = _(_(lambda x, _: str.isalpha(x)), '*', mode=Mode.Lazy)(_('123'))
+    print(m.match('ab123a'))
     assert str(m.match('ab123a')) == '[FT(2, 5)]'
 
 
@@ -124,21 +125,21 @@ def t_invert():
 
 
 for func in (
-        t_str,
-        t_abc,
-        t_abcda,
-        t_abc_bbc,
-        t_b_2_cd,
-        t_opt_abc_bc,
-        t_ab_c_star_c_plus,
-        t_abc_and_abc,
-        t_b_2_cd_counter,
-        t_letter_123,
-        t_ignore_c,
-        t_str_num,
-        t_num_func,
+        # t_str,
+        # t_abc,
+        # t_abcda,
+        # t_abc_bbc,
+        # t_b_2_cd,
+        # t_opt_abc_bc,
+        # t_ab_c_star_c_plus,
+        # t_abc_and_abc,
+        # t_b_2_cd_counter,
+        # t_letter_123,
+        # t_ignore_c,
+        # t_str_num,
+        # t_num_func,
         t_lazy,
-        t_or_and,
+        # t_or_and,
         # t_invert,
 ):
     func()
