@@ -6,18 +6,18 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, capture_t=(), t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, store_t=(), t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed if ed is not None else op
-        self.capture_t = capture_t
+        self.store_t = store_t
         self.t = t
 
     @property
     def capture(self):
         d = {}
-        for k, *item in self.capture_t:
+        for k, *item in self.store_t:
             if isinstance(k, str):
                 op, ed = item
                 d.setdefault(k, []).append((op, ed))
@@ -108,7 +108,7 @@ def make_gen(target, num_t: tuple, name: str):
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
-                        inner_gen = gen(echo.clone(capture_t=(*echo.capture_t, (name, echo.op, echo.ed)))
+                        inner_gen = gen(echo.clone(store_t=(*echo.store_t, (name, echo.op, echo.ed)))
                                         if name and from_num <= counter else echo)
                         next(inner_gen)
                     if counter < from_num:
@@ -179,7 +179,7 @@ class Mode(Enum):
 def agl_update(res_l: list):
     update_res_l = []
     for res in filter(bool, res_l):
-        for k, *item in res.capture_t:
+        for k, *item in res.store_t:
             if isinstance(k, (str, int)):
                 continue
             length, = item
@@ -192,7 +192,7 @@ def agl_update(res_l: list):
 def agl_filter(res_l: list):
     filter_res_l = []
     for res in res_l:
-        for k, *item in res.capture_t:
+        for k, *item in res.store_t:
             if isinstance(k, (str, int)):
                 continue
             length, = item
@@ -350,11 +350,11 @@ class R:
             for res in self_res_l:
 
                 if self.xor_r:
-                    for k, *item in res.capture_t:
+                    for k, *item in res.store_t:
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
-                    self.xor_r.active(res.clone(ed=res.op, capture_t=(
+                    self.xor_r.active(res.clone(ed=res.op, store_t=(
                         (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
                     for char in char_l[op + 1:res.ed + 1]:
                         xor_res_l = self.xor_r.broadcast(char, char_l)
@@ -365,14 +365,14 @@ class R:
                         for xor_res in xor_res_l:
                             if not xor_res:
                                 res.as_success()
-                                res.capture_t += xor_res.capture_t
+                                res.store_t += xor_res.store_t
                         if not xor_res_l:
                             res.as_success()
                     else:
                         for xor_res in xor_res_l:
                             if xor_res:
                                 res.as_success()
-                                res.capture_t += xor_res.capture_t
+                                res.store_t += xor_res.store_t
                 elif self.invert:
                     res.invert()
 
@@ -383,7 +383,7 @@ class R:
                     res.t = (*res.t, id(self))
                     nth = res.t.count(id(self))
                     if nth < to_num:
-                        self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
+                        self.active(res.clone(store_t=(*res.store_t, (self.name, res.op, res.ed)))
                                     if self.name and from_num <= nth else res)
                     if from_num <= nth <= to_num:
                         res.t = tuple(i for i in res.t if i != id(self))
@@ -395,11 +395,11 @@ class R:
                 if not res:
                     continue
                 else:
-                    for k, *item in res.capture_t:
+                    for k, *item in res.store_t:
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
-                    self.and_r.active(res.clone(ed=res.op, capture_t=(
+                    self.and_r.active(res.clone(ed=res.op, store_t=(
                         (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
                     for char in char_l[op + 1:res.ed + 1]:
                         and_res_l = self.and_r.broadcast(char, char_l)
@@ -409,16 +409,16 @@ class R:
                     for and_res in and_res_l:
                         if and_res:
                             res.as_success()
-                            res.capture_t += and_res.capture_t
+                            res.store_t += and_res.store_t
         for or_r in self.or_r_l:
             self_res_l.extend(or_r.broadcast(char, char_l))
 
         if self.name or self.mode is not Mode.All:
             for res in filter(bool, self_res_l):
                 if self.name:
-                    res.capture_t = (*res.capture_t, (self.name, res.op, res.ed))
+                    res.store_t = (*res.store_t, (self.name, res.op, res.ed))
                 if self.mode is not Mode.All:
-                    res.capture_t = (*res.capture_t, (self, res.ed - res.op))
+                    res.store_t = (*res.store_t, (self, res.ed - res.op))
         self_res_l = agl_filter(self_res_l)
 
         if self.next_r:
@@ -431,7 +431,7 @@ class R:
                     echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
                         res_l.append(res if curr_r.mode is Mode.All else
-                                     res.clone(capture_t=(*res.capture_t, (curr_r, 0))))
+                                     res.clone(store_t=(*res.store_t, (curr_r, 0))))
                 seeds = res_l
                 if next_r.next_r:
                     curr_r = next_r
@@ -446,8 +446,8 @@ class R:
 
     def active(self, prev_res: Res, affect=True):
         res = prev_res
-        if (self.and_r or self.xor_r) and (not res.capture_t or res.capture_t[-1][0] != id(self)):
-            res = res.clone(capture_t=(*res.capture_t, (id(self), res.ed)))
+        if (self.and_r or self.xor_r) and (not res.store_t or res.store_t[-1][0] != id(self)):
+            res = res.clone(store_t=(*res.store_t, (id(self), res.ed)))
         if self.is_matcher:
             fa = self.gen(res)
             echo = next(fa)
@@ -476,7 +476,7 @@ class R:
                     echo = 'OPT'
         if self.next_r and echo == 'OPT' and self.is_top and prev_res.t.count(id(self)) == 0:
             self.next_r.active(prev_res if self.mode is Mode.All else
-                               prev_res.clone(capture_t=(*prev_res.capture_t, (self, 0))))
+                               prev_res.clone(store_t=(*prev_res.store_t, (self, 0))))
         return echo
 
     def match(self, source: Iterable):
