@@ -6,19 +6,18 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, store_t=(), t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, store_t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed if ed is not None else op
         self.store_t = store_t
-        self.t = t
 
     @property
     def capture(self):
         d = {}
         for k, *item in self.store_t:
-            if isinstance(k, str):
+            if isinstance(k, str) and k.startswith('@'):
                 op, ed = item
                 d.setdefault(k, []).append((op, ed))
         return d
@@ -29,6 +28,17 @@ class Res:
     def __eq__(self, other):
         if isinstance(other, Res):
             return self.epoch == other.epoch and self.ed == other.ed
+
+    def get_nth(self, str_id: str):
+        for k, *item in self.store_t:
+            if isinstance(k, str) and k == str_id:
+                return item[0]
+        return 0
+
+    def set_nth(self, str_id: str, val: int):
+        self.store_t = tuple(i for i in self.store_t if i[0] != str_id)
+        if val != 0:
+            self.store_t = ((str_id, val), *self.store_t)
 
     def clone(self, **kwargs):
         return Res(**ChainMap(kwargs, self.__dict__))
