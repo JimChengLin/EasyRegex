@@ -118,7 +118,7 @@ def make_gen(target, num_t: tuple, name: str):
                 if isinstance(echo, Success):
                     counter += 1
                     if counter < to_num:
-                        inner_gen = gen(echo.clone(store_t=(*echo.store_t, (name, echo.op, echo.ed)))
+                        inner_gen = gen(echo.clone(store_t=((name, echo.op, echo.ed), *echo.store_t))
                                         if name and from_num <= counter else echo)
                         next(inner_gen)
                     if counter < from_num:
@@ -190,7 +190,7 @@ def agl_update(res_l: list):
     update_res_l = []
     for res in filter(bool, res_l):
         for k, *item in res.store_t:
-            if isinstance(k, (str, int)):
+            if not isinstance(k, R):
                 continue
             length, = item
             k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
@@ -203,7 +203,7 @@ def agl_filter(res_l: list):
     filter_res_l = []
     for res in res_l:
         for k, *item in res.store_t:
-            if isinstance(k, (str, int)):
+            if not isinstance(k, R):
                 continue
             length, = item
             if k.mode is Mode.Greedy:
