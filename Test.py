@@ -140,6 +140,6 @@ for func in (
         # t_num_func,
         t_lazy,
         # t_or_and,
-        # t_invert,
+        t_invert,
 ):
     func()

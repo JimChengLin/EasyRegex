@@ -383,12 +383,11 @@ class R:
                     from_num, to_num = explain_n(res, self.num_t)
                     res.t = (*res.t, id(self))
                     res.nth += 1
-                    print()
-                    assert res.t.count(id(self)) == res.nth
-                    if res.nth < to_num:
+                    nth = res.t.count(id(self))
+                    if nth < to_num:
                         self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
-                                    if self.name and from_num <= res.nth else res)
-                    if from_num <= res.nth <= to_num:
+                                    if self.name and from_num <= nth else res)
+                    if from_num <= nth <= to_num:
                         res.nth = 0  # 已激活
                         res.t = tuple(i for i in res.t if i != id(self))
                         res_l.append(res)
@@ -478,7 +477,9 @@ class R:
                 or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
-        if self.next_r and echo == 'OPT' and self.is_top:
+        if prev_res.t.count(id(self)) != prev_res.nth and self.next_r and echo == 'OPT':
+            print()
+        if self.next_r and echo == 'OPT' and self.is_top and prev_res.t.count(id(self)) == 0:
             self.next_r.active(prev_res if self.mode is Mode.All else
                                prev_res.clone(capture_t=(*prev_res.capture_t, (self, 0))))
         return echo
