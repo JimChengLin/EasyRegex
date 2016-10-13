@@ -358,7 +358,6 @@ class R:
             self_res_l = self.target_rule.broadcast(char, char_l)
             res_l = []
             for res in self_res_l:
-
                 if self.xor_r:
                     for k, *item in res.store_t:
                         if isinstance(k, int) and k == id(self):
@@ -390,13 +389,14 @@ class R:
                     res_l.append(res)
                 else:
                     from_num, to_num = explain_n(res, self.num_t)
-                    res.t = (*res.t, id(self))
-                    nth = res.t.count(id(self))
+                    str_id = str(id(self))
+                    nth = res.get_nth(str_id) + 1
+                    res.set_nth(str_id, nth)
                     if nth < to_num:
-                        self.active(res.clone(store_t=(*res.store_t, (self.name, res.op, res.ed)))
+                        self.active(res.clone(store_t=((self.name, res.op, res.ed), *res.store_t))
                                     if self.name and from_num <= nth else res)
                     if from_num <= nth <= to_num:
-                        res.t = tuple(i for i in res.t if i != id(self))
+                        res.set_nth(str_id, 0)
                         res_l.append(res)
             self_res_l = res_l
 
@@ -426,9 +426,9 @@ class R:
         if self.name or self.mode is not Mode.All:
             for res in filter(bool, self_res_l):
                 if self.name:
-                    res.store_t = (*res.store_t, (self.name, res.op, res.ed))
+                    res.store_t = ((self.name, res.op, res.ed), *res.store_t)
                 if self.mode is not Mode.All:
-                    res.store_t = (*res.store_t, (self, res.ed - res.op))
+                    res.store_t = ((self, res.ed - res.op), *res.store_t)
         self_res_l = agl_filter(self_res_l)
 
         if self.next_r:
