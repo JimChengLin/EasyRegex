@@ -495,9 +495,8 @@ class R:
         res_l = []
         char_l = []
         for i, char in enumerate(chain([EOF], source, [EOF])):
-            i -= 1
             char_l.append(char)
-            self.active(Res(i, i))
+            self.active(Res(i - 1, i - 1))
             res_l.extend(agl_update(self.broadcast(char, char_l)))
         res_l = agl_filter(res_l)
         self.broadcast()
