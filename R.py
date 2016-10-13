@@ -6,17 +6,16 @@ from typing import Iterable, Callable
 
 
 class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, nth=0, capture_t=(), t=()):
+    def __init__(self, epoch: int, op: int, ed: int = None, capture_t=(), t=()):
         self.epoch = epoch
         self.op = op
 
         self.ed = ed if ed is not None else op
-        self.nth = nth
         self.capture_t = capture_t
         self.t = t
 
     @property
-    def capture_d(self):
+    def capture(self):
         d = {}
         for k, *item in self.capture_t:
             if isinstance(k, str):
@@ -25,7 +24,7 @@ class Res:
         return d
 
     def __repr__(self):
-        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture_d or '')
+        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture or '')
 
     def __eq__(self, other):
         if isinstance(other, Res):
@@ -42,8 +41,8 @@ class Res:
         self.__class__ = Fail
         return self
 
-    def to_param(self):
-        return self.epoch, self.ed, self.capture_d
+    def to_args(self):
+        return self.epoch, self.ed, self.capture
 
 
 class Success(Res):
@@ -80,7 +79,7 @@ def make_gen(target, num_t: tuple, name: str):
             recv = yield 'GO'
             res.ed += 1
             try:
-                accept = target(recv, res.to_param())
+                accept = target(recv, res.to_args())
             except TypeError:
                 accept = False
             if accept:
@@ -164,9 +163,9 @@ def str_n(num_t: tuple):
 def explain_n(res: Res, num_t: tuple):
     from_num, to_num = num_t
     if isinstance(from_num, str):
-        from_num = to_num = len(res.capture_d.get(from_num, ()))
+        from_num = to_num = len(res.capture.get(from_num, ()))
     elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(*res.to_param()), to_num(*res.to_param())
+        from_num, to_num = from_num(*res.to_args()), to_num(*res.to_args())
     assert 0 <= from_num <= to_num
     return from_num, to_num
 
@@ -382,13 +381,11 @@ class R:
                 else:
                     from_num, to_num = explain_n(res, self.num_t)
                     res.t = (*res.t, id(self))
-                    res.nth += 1
                     nth = res.t.count(id(self))
                     if nth < to_num:
                         self.active(res.clone(capture_t=(*res.capture_t, (self.name, res.op, res.ed)))
                                     if self.name and from_num <= nth else res)
                     if from_num <= nth <= to_num:
-                        res.nth = 0  # 已激活
                         res.t = tuple(i for i in res.t if i != id(self))
                         res_l.append(res)
             self_res_l = res_l
@@ -477,8 +474,6 @@ class R:
                 or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
-        if prev_res.t.count(id(self)) != prev_res.nth and self.next_r and echo == 'OPT':
-            print()
         if self.next_r and echo == 'OPT' and self.is_top and prev_res.t.count(id(self)) == 0:
             self.next_r.active(prev_res if self.mode is Mode.All else
                                prev_res.clone(capture_t=(*prev_res.capture_t, (self, 0))))
