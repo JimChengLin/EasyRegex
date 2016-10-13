@@ -518,5 +518,4 @@ class R:
 
 
 class EOF:
-    def __repr__(self):
-        return '(EOF)'
+    pass

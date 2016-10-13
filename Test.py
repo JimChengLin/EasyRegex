@@ -114,6 +114,7 @@ def t_xor():
 
 def t_invert():
     no_alpha = ~_(lambda x, _: str.isalpha(x))
+    assert str(no_alpha) == '[~%<lambda>%]'
     assert str(no_alpha.match('123456')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3),' \
                                             ' FT(3, 4), FT(4, 5), FT(5, 6), FT(6, 7)]'
     mul_no_alpha = _(no_alpha, '+')
