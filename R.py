@@ -439,9 +439,10 @@ class R:
                 res_l = []
                 for res in seeds:
                     echo = next_r.active(res.clone(op=res.ed))
-                    if echo == 'OPT' and (not self.is_top or (self.is_top and not next_r.next_r)):
+                    if echo == 'OPT' and (not curr_r.is_top or (curr_r.is_top and not next_r.next_r)) \
+                            and res.get_nth(str(id(curr_r))) == 0:
                         res_l.append(res if curr_r.mode is Mode.All else
-                                     res.clone(store_t=(*res.store_t, (curr_r, 0))))
+                                     res.clone(store_t=((curr_r, 0), *res.store_t)))
                 seeds = res_l
                 if next_r.next_r:
                     curr_r = next_r
@@ -457,7 +458,7 @@ class R:
     def active(self, prev_res: Res, affect=True):
         res = prev_res
         if (self.and_r or self.xor_r) and (not res.store_t or res.store_t[-1][0] != id(self)):
-            res = res.clone(store_t=(*res.store_t, (id(self), res.ed)))
+            res = res.clone(store_t=((id(self), res.ed), *res.store_t))
         if self.is_matcher:
             fa = self.gen(res)
             echo = next(fa)
@@ -484,9 +485,9 @@ class R:
                 or_r_echo = or_r.active(prev_res)
                 if or_r_echo == 'OPT':
                     echo = 'OPT'
-        if self.next_r and echo == 'OPT' and self.is_top and prev_res.t.count(id(self)) == 0:
+        if self.next_r and echo == 'OPT' and self.is_top and prev_res.get_nth(str(id(self))) == 0:
             self.next_r.active(prev_res if self.mode is Mode.All else
-                               prev_res.clone(store_t=(*prev_res.store_t, (self, 0))))
+                               prev_res.clone(store_t=((self, 0), *prev_res.store_t)))
         return echo
 
     def match(self, source: Iterable):
