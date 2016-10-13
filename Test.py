@@ -114,16 +114,17 @@ def t_xor():
 
 def t_invert():
     no_alpha = ~_(lambda x, _: str.isalpha(x))
-    # assert str(no_alpha.match('123456')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3), ' \
-    #                                         'FT(3, 4), FT(4, 5), FT(5, 6), FT(6, 7)]'
+    assert str(no_alpha.match('123456')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3),' \
+                                            ' FT(3, 4), FT(4, 5), FT(5, 6), FT(6, 7)]'
     mul_no_alpha = _(no_alpha, '+')
-    print(mul_no_alpha.match('12'))
+    assert str(mul_no_alpha.match('12')) == '[FT(-1, 0), FT(-1, 1), FT(0, 1), FT(-1, 2), FT(0, 2), FT(1, 2),' \
+                                            ' FT(-1, 3), FT(0, 3), FT(1, 3), FT(2, 3)]'
     mul_no_alpha = _(no_alpha, '+', mode=Mode.Greedy)
-    print(mul_no_alpha.match('12'))
+    assert str(mul_no_alpha.match('12')) == '[FT(-1, 3)]'
     mul_no_alpha = _(no_alpha, '+', mode=Mode.Lazy)
-    print(mul_no_alpha.match('12'))
-    # mul_no_alpha = _(lambda x, _: not str.isalpha(x), '+')
-    # print(mul_no_alpha.match('123'))
+    assert str(mul_no_alpha.match('12')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3)]'
+    mul_no_alpha = _(lambda x, _: not str.isalpha(x), '+')
+    assert str(mul_no_alpha.match('123')) == '[FT(0, 1), FT(0, 2), FT(1, 2), FT(0, 3), FT(1, 3), FT(2, 3)]'
 
 
 for func in (
