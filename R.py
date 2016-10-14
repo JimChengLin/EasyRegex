@@ -361,7 +361,7 @@ class R:
             for res in self_res_l:
                 if self.xor_r:
                     for k, *item in res.store_t:
-                        # active时存入store_t
+                        # active时已存入store_t
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
@@ -371,7 +371,7 @@ class R:
                         xor_res_l = self.xor_r.broadcast(char, char_l)
                     self.xor_r.broadcast()
                     if echo == 'OPT':
-                        xor_res_l.append(res.clone(store_t=()))
+                        xor_res_l.append(res.clone(store_t=()).as_success())
 
                     if res:
                         res.as_fail()

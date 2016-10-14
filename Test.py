@@ -166,7 +166,8 @@ def t_xor():
 
 
 def t_xor_opt():
-    pass
+    m = (_('a') ^ _('b', '*'))('e')
+    assert str(m.match('ce')) == '[FT(0, 2), FT(1, 2)]'
 
 
 for func in (
