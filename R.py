@@ -454,7 +454,7 @@ class R:
 
     def active(self, prev_res: Res, affect=True):
         res = prev_res
-        if (self.and_r or self.xor_r) and (not res.store_t or res.store_t[-1][0] != id(self)):
+        if (self.and_r or self.xor_r) and not any(filter(lambda x: x[0] == id(self), res.store_t)):
             res = res.clone(store_t=((id(self), res.ed), *res.store_t))
         if self.is_matcher:
             fa = self.gen(res)
