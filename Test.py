@@ -108,10 +108,6 @@ def t_or_and():
     assert str(m.match('abcaabcd')) == '[FT(0, 7)]'
 
 
-def t_xor():
-    pass
-
-
 def t_invert():
     no_alpha = ~_(lambda x, _: str.isalpha(x))
     assert str(no_alpha) == '[~%<lambda>%]'
@@ -158,6 +154,16 @@ def t_clone():
     assert m != m() != m.clone()
 
 
+def t_xor():
+    m = (_('a') ^ _('b'))('c')
+    assert str(m) == '[a^b]c'
+    assert str(m.match('ac')) == '[FT(0, 2)]'
+    assert str(m.match('bc')) == '[FT(0, 2)]'
+    assert str(m.match('cc')) == '[]'
+    m = (_('a') ^ _('ab'))('c')
+    assert str(m.match('ac')) == '[FT(0, 2)]'
+
+
 for func in (
         t_str,
         t_abc,
@@ -178,5 +184,6 @@ for func in (
         t_exception,
         t_and_or_opt,
         t_clone,
+        t_xor,
 ):
     func()
