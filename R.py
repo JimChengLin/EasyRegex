@@ -361,11 +361,13 @@ class R:
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
-                    self.xor_r.active(res.clone(ed=res.op, store_t=(
+                    echo = self.xor_r.active(res.clone(ed=res.op, store_t=(
                         (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
                     for char in char_l[op + 1:res.ed + 1]:
                         xor_res_l = self.xor_r.broadcast(char, char_l)
                     self.xor_r.broadcast()
+                    if echo == 'OPT':
+                        xor_res_l.append(res.clone(store_t=()))
 
                     if res:
                         res.as_fail()
@@ -407,11 +409,13 @@ class R:
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
-                    self.and_r.active(res.clone(ed=res.op, store_t=(
+                    echo = self.and_r.active(res.clone(ed=res.op, store_t=(
                         (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
                     for char in char_l[op + 1:res.ed + 1]:
                         and_res_l = self.and_r.broadcast(char, char_l)
                     self.and_r.broadcast()
+                    if echo == 'OPT':
+                        and_res_l.append(res.clone(store_t=()))
 
                     res.as_fail()
                     for and_res in and_res_l:
