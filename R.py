@@ -423,10 +423,9 @@ class R:
 
         if self.name or self.mode is not Mode.All:
             for res in filter(bool, self_res_l):
-                if self.name:
-                    res.store_t = ((self.name, res.op, res.ed), *res.store_t)
-                if self.mode is not Mode.All:
-                    res.store_t = ((self, res.ed - res.op), *res.store_t)
+                res.store_t = (*(((self.name, res.op, res.ed),) if self.name else ()),
+                               *(((self, res.ed - res.op),) if self.mode is not Mode.All else ()),
+                               *res.store_t)
         self_res_l = agl_filter(self_res_l)
 
         if self.next_r:
