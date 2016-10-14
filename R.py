@@ -378,14 +378,16 @@ class R:
                         for xor_res in xor_res_l:
                             if not xor_res:
                                 res.as_success()
-                                res.store_t += xor_res.store_t
+                                res.store_t += tuple(i for i in xor_res.store_t if i[0] == self.xor_r.name) \
+                                    if self.xor_r.name else ()
                         if not xor_res_l:
                             res.as_success()
                     else:
                         for xor_res in xor_res_l:
                             if xor_res:
                                 res.as_success()
-                                res.store_t += xor_res.store_t
+                                res.store_t += tuple(i for i in xor_res.store_t if i[0] == self.xor_r.name) \
+                                    if self.xor_r.name else ()
                 elif self.invert:
                     res.invert()
 
@@ -425,7 +427,8 @@ class R:
                     for and_res in and_res_l:
                         if and_res:
                             res.as_success()
-                            res.store_t += and_res.store_t
+                            res.store_t += tuple(i for i in and_res.store_t if i[0] == self.and_r.name) \
+                                if self.and_r.name else ()
         for or_r in self.or_r_l:
             self_res_l.extend(or_r.broadcast(char, char_l))
 

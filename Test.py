@@ -170,6 +170,19 @@ def t_xor_opt():
     assert str(m.match('ce')) == '[FT(0, 2), FT(1, 2)]'
 
 
+def t_capture_num_merge():
+    m = (_('a') ^ _('b', '@b'))('c')
+    assert str(m.match('ac')) == '[FT(1, 2)]'
+    assert str(m.match('bc')) == '[FT(0, 2), FT(1, 2)]'
+    m = (_('a', '@a') ^ _('b', '@b'))('c')
+    assert str(m.match('bc')) == '[]'
+    m = (_('a', name='@a') ^ _('b', name='@b'))('c')
+    assert str(m.match('ac')) == "[FT(0, 2){'@a': [(0, 1)]}]"
+    assert str(m.match('bc')) == "[FT(0, 2){'@b': [(0, 1)]}]"
+    m = _('ab', name='@1') & _('ab', name='@2')
+    assert str(m.match('ab')) == "[FT(0, 2){'@2': [(0, 2)], '@1': [(0, 2)]}]"
+
+
 for func in (
         t_str,
         t_abc,
@@ -192,5 +205,6 @@ for func in (
         t_clone,
         t_xor,
         t_xor_opt,
+        t_capture_num_merge,
 ):
     func()
