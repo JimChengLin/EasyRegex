@@ -189,11 +189,10 @@ def agl_update(res_l: list):
     update_res_l = []
     for res in filter(bool, res_l):
         for k, *item in res.store_t:
-            if not isinstance(k, R):
-                continue
-            length, = item
-            k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
-                min(length, k.best_length if k.best_length is not None else inf)
+            if isinstance(k, R):
+                length, = item
+                k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
+                    min(length, k.best_length if k.best_length is not None else inf)
         update_res_l.append(res)
     return update_res_l
 
@@ -202,15 +201,14 @@ def agl_filter(res_l: list):
     filter_res_l = []
     for res in res_l:
         for k, *item in res.store_t:
-            if not isinstance(k, R):
-                continue
-            length, = item
-            if k.mode is Mode.Greedy:
-                if length < (k.best_length or 0):
-                    break
-            else:
-                if length > (k.best_length if k.best_length is not None else inf):
-                    break
+            if isinstance(k, R):
+                length, = item
+                if k.mode is Mode.Greedy:
+                    if length < (k.best_length or 0):
+                        break
+                else:
+                    if length > (k.best_length if k.best_length is not None else inf):
+                        break
         else:
             filter_res_l.append(res)
     return filter_res_l
