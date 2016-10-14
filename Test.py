@@ -141,6 +141,23 @@ def t_exception():
     assert counter == 2
 
 
+def t_and_or_opt():
+    m = _('abc') & _('bcd', '*')
+    assert str(m.match('abc')) == '[FT(0, 3)]'
+    m = (_('abc') | _('c', '*'))('e')
+    assert str(m.match('ee')) == '[FT(0, 1), FT(1, 2)]'
+    m = (_('c', '*') & _('c', '*'))('e')
+    assert str(m.match('ee')) == '[FT(0, 1), FT(1, 2)]'
+    m = (_('c', '*') & _('c'))('e')
+    assert str(m.match('ee')) == '[]'
+    assert str(m.match('ce')) == '[FT(0, 2)]'
+
+
+def t_clone():
+    m = _('a')
+    assert m != m() != m.clone()
+
+
 for func in (
         t_str,
         t_abc,
@@ -159,5 +176,7 @@ for func in (
         t_or_and,
         t_invert,
         t_exception,
+        t_and_or_opt,
+        t_clone,
 ):
     func()
