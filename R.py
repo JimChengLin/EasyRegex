@@ -36,9 +36,8 @@ class Res:
         return 0
 
     def set_nth(self, str_id: str, val: int):
-        self.store_t = tuple(i for i in self.store_t if i[0] != str_id)
-        if val != 0:
-            self.store_t = ((str_id, val), *self.store_t)
+        self.store_t = (*(((str_id, val),) if val != 0 else ()),
+                        *(i for i in self.store_t if i[0] != str_id))
 
     def clone(self, **kwargs):
         return Res(**ChainMap(kwargs, self.__dict__))
