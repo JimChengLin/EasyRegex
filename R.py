@@ -504,9 +504,11 @@ class R:
         self.is_top = False
         return res_l
 
-    def clone(self):
+    def clone(self, num=None, name: str = None, mode: Mode = None):
         matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(),
-                    self.num_t, self.name, self.mode)
+                    self.num_t if num is None else num,
+                    name or self.name,
+                    mode or self.mode)
         if self.and_r:
             matcher.and_r = self.and_r.clone()
         matcher.or_r_l[:] = (i.clone() for i in self.or_r_l)
