@@ -128,6 +128,19 @@ def t_invert():
     assert str(mul_no_alpha.match('123')) == '[FT(0, 1), FT(0, 2), FT(1, 2), FT(0, 3), FT(1, 3), FT(2, 3)]'
 
 
+def t_exception():
+    counter = 0
+    try:
+        _(1)
+    except Exception:
+        counter += 1
+    try:
+        _('1', '1')
+    except Exception:
+        counter += 1
+    assert counter == 2
+
+
 for func in (
         t_str,
         t_abc,
@@ -145,5 +158,6 @@ for func in (
         t_lazy,
         t_or_and,
         t_invert,
+        t_exception,
 ):
     func()
