@@ -357,6 +357,7 @@ class R:
             for res in self_res_l:
                 if self.xor_r:
                     for k, *item in res.store_t:
+                        # active时存入store_t
                         if isinstance(k, int) and k == id(self):
                             op, = item
                             break
