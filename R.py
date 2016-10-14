@@ -11,6 +11,10 @@ class Res:
         self.op = op
 
         self.ed = ed if ed is not None else op
+        # @ => capture
+        # R => AGL
+        # id => op
+        # str(id) => nth
         self.store_t = store_t
 
     @property

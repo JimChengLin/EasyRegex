@@ -113,6 +113,7 @@ def t_invert():
     assert str(no_alpha) == '[~%<lambda>%]'
     assert str(no_alpha.match('123456')) == '[FT(-1, 0), FT(0, 1), FT(1, 2), FT(2, 3),' \
                                             ' FT(3, 4), FT(4, 5), FT(5, 6), FT(6, 7)]'
+    assert str(no_alpha.match('abc')) == '[FT(-1, 0), FT(3, 4)]'
     mul_no_alpha = _(no_alpha, '+')
     assert str(mul_no_alpha.match('12')) == '[FT(-1, 0), FT(-1, 1), FT(0, 1), FT(-1, 2), FT(0, 2), FT(1, 2),' \
                                             ' FT(-1, 3), FT(0, 3), FT(1, 3), FT(2, 3)]'
@@ -164,6 +165,10 @@ def t_xor():
     assert str(m.match('ac')) == '[FT(0, 2)]'
 
 
+def t_xor_opt():
+    pass
+
+
 for func in (
         t_str,
         t_abc,
@@ -185,5 +190,6 @@ for func in (
         t_and_or_opt,
         t_clone,
         t_xor,
+        t_xor_opt,
 ):
     func()
