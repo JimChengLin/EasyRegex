@@ -48,6 +48,7 @@ def t_abc_and_abc():
     m = _(_('abc') & _('abc') & _('abc'))(_('d'))
     assert str(m) == '[abc&abc&abc]d'
     assert str(m.match('abcd')) == '[FT(0, 4)]'
+    assert str(m(m).match('abcdabcd')) == '[FT(0, 8)]'
 
 
 def t_b_2_cd_counter():
@@ -98,7 +99,6 @@ def t_or_and():
     m = (_('abc') | _('abb')) & _('abc')
     assert str(m) == '[abc|abb]&abc'
     assert str(m.match('abc')) == '[FT(0, 3)]'
-
     alpha = _(lambda x, _: str.isalpha(x), '+')
     m = _(_(alpha)('abc')) & _(_('abc')(alpha))
     assert str(m) == '[%<lambda>%]{1,inf}abc&abc[%<lambda>%]{1,inf}'
