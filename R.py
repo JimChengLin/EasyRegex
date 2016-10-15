@@ -487,15 +487,14 @@ class R:
         if self.xor_r:
             xor_echo = self.xor_r.active(prev_res, affect=False)
             echo = 'GO' if xor_echo == echo else 'OPT'
-        elif not self.invert:
-            if echo == 'OPT' and self.and_r:
-                and_echo = self.and_r.active(prev_res, affect=False)
-                if and_echo != 'OPT':
-                    echo = 'GO'
-            for or_r in self.or_r_l:
-                or_r_echo = or_r.active(prev_res)
-                if or_r_echo == 'OPT':
-                    echo = 'OPT'
+        if echo == 'OPT' and self.and_r:
+            and_echo = self.and_r.active(prev_res, affect=False)
+            if and_echo != 'OPT':
+                echo = 'GO'
+        for or_r in self.or_r_l:
+            or_r_echo = or_r.active(prev_res)
+            if or_r_echo == 'OPT':
+                echo = 'OPT'
         if self.next_r and echo == 'OPT' and self.is_top and prev_res.get_nth(str(id(self))) == 0:
             self.next_r.active(prev_res if self.mode is Mode.All else
                                prev_res.clone(store_t=((self, 0), *prev_res.store_t)))
