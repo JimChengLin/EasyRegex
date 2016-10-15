@@ -380,8 +380,6 @@ class R:
                                 res.as_success()
                                 res.store_t += tuple(i for i in xor_res.store_t if i[0] == self.xor_r.name) \
                                     if self.xor_r.name else ()
-                        if not xor_res_l:
-                            res.as_success()
                     else:
                         for xor_res in xor_res_l:
                             if xor_res:
