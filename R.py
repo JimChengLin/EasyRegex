@@ -433,7 +433,11 @@ class R:
 
         if self.name or self.mode is not Mode.All:
             for res in filter(bool, self_res_l):
-                res.store_t = (*(((self.name, res.op, res.ed),) if self.name else ()),
+                for k, *item in res.store_t:
+                    if isinstance(k, int) and k == id(self):
+                        op, = item
+                        break
+                res.store_t = (*(((self.name, op, res.ed),) if self.name else ()),
                                *(((self, res.ed - res.op),) if self.mode is not Mode.All else ()),
                                *res.store_t)
         self_res_l = agl_filter(self_res_l)
@@ -464,7 +468,7 @@ class R:
 
     def active(self, prev_res: Res, affect=True):
         res = prev_res
-        if (self.and_r or self.xor_r) and not any(filter(lambda x: x[0] == id(self), res.store_t)):
+        if not any(filter(lambda x: x[0] == id(self), res.store_t)):
             res = res.clone(store_t=((id(self), res.ed), *res.store_t))
         if self.is_matcher:
             fa = self.gen(res)
