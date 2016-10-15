@@ -430,8 +430,6 @@ class R:
                             res.as_success()
                             res.store_t += tuple(i for i in and_res.store_t if i[0] == self.and_r.name) \
                                 if self.and_r.name else ()
-        for or_r in self.or_r_l:
-            self_res_l.extend(or_r.broadcast(char, char_l))
 
         if self.name or self.mode is not Mode.All:
             for res in filter(bool, self_res_l):
@@ -444,6 +442,8 @@ class R:
                                *res.store_t)
         self_res_l = agl_filter(self_res_l)
 
+        for or_r in self.or_r_l:
+            self_res_l.extend(or_r.broadcast(char, char_l))
         if self.next_r:
             curr_r = self
             next_r = self.next_r
