@@ -467,16 +467,16 @@ class R:
             return self_res_l
 
     def active(self, prev_res: Res, affect=True):
-        res = prev_res
-        if not any(filter(lambda x: x[0] == id(self), res.store_t)):
-            res = res.clone(store_t=((id(self), res.ed), *res.store_t))
+        prev_res = prev_res.clone()
+        if not any(filter(lambda x: x[0] == id(self), prev_res.store_t)):
+            prev_res.store_t = ((id(self), prev_res.ed), *prev_res.store_t)
         if self.is_matcher:
-            fa = self.gen(res)
+            fa = self.gen(prev_res)
             echo = next(fa)
             if affect:
                 self.fa_l.append(fa)
         else:
-            echo = self.target_rule.active(res, affect)
+            echo = self.target_rule.active(prev_res, affect)
             if echo == 'GO':
                 from_num, _ = explain_n(prev_res, self.num_t)
                 if from_num == 0:
