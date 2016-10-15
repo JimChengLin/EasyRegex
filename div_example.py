@@ -15,17 +15,6 @@ open_div = _(open_div, name='@open_div')
 # close_div类似
 close_div = _('</div>', name='@close_div')
 
-
-# 符号表内open_div数量多于close_div时接受输入
-def open_more_than_close(_, args):
-    epoch, ed, capture = args
-    if len(capture.get('@open_div', ())) > len(capture.get('@close_div', ())):
-        return True
-
-
-# 标签之间的字符
-inner_chars = _(open_more_than_close, '*')
-
 # 标签之间仅有3种情况
 # 1. open_div
 # 2. close_div

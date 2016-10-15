@@ -162,7 +162,7 @@ def t_xor():
     assert str(m.match('bc')) == '[FT(0, 2)]'
     assert str(m.match('cc')) == '[]'
     m = (_('a') ^ _('ab'))('c')
-    assert str(m.match('ac')) == '[]'
+    assert str(m.match('ac')) == '[FT(0, 2)]'
     assert str(m.match('abc')) == '[]'
 
 
