@@ -162,7 +162,8 @@ def t_xor():
     assert str(m.match('bc')) == '[FT(0, 2)]'
     assert str(m.match('cc')) == '[]'
     m = (_('a') ^ _('ab'))('c')
-    assert str(m.match('ac')) == '[FT(0, 2)]'
+    assert str(m.match('ac')) == '[]'
+    assert str(m.match('abc')) == '[]'
 
 
 def t_xor_opt():
@@ -186,12 +187,9 @@ def t_capture_num_merge():
 
 def t_open_div():
     any_char = _(lambda curr_char, curr_args: True)
-    any_no = _(any_char & ~_('>'))
-    print(any_no)
-    print(any_no.match('av>>>'))
-    # open_div = _('<div')(_(any_char & (~_('>')), '*', name='@inner'), '>')
-    # print(open_div)
-    # print(open_div.match('<div></div>'))
+    open_div = _(any_char & (~_('>')), '*', name='@X')
+    print(open_div)
+    print(open_div.match('<div></div>'))
 
 
 for func in (
@@ -217,6 +215,6 @@ for func in (
         t_xor,
         t_xor_opt,
         t_capture_num_merge,
-        t_open_div,
+        # t_open_div,
 ):
     func()
