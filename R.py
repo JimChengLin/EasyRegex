@@ -446,7 +446,7 @@ class R:
                 res_l = []
                 for res in seeds:
                     echo = next_r.active(res.clone(op=res.ed))
-                    if echo == 'OPT' and (not curr_r.is_top or (curr_r.is_top and not next_r.next_r)) \
+                    if echo == 'OPT' and (not next_r.is_top or (next_r.is_top and not next_r.next_r)) \
                             and res.get_nth(str(id(curr_r))) == 0:
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(store_t=((curr_r, 0), *res.store_t)))
