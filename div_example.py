@@ -36,6 +36,6 @@ inner = open_div | close_div
 div = open_div(_(inner, '*'), _(close_div, num='@open_div'))  # 完整div定义
 
 t_source = '''
-<div><div></div></div>
+<div class="outer"><div class="inner"></div></div>
 '''
 print(len(t_source), div.match(t_source))
