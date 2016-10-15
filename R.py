@@ -447,16 +447,16 @@ class R:
         if self.next_r:
             curr_r = self
             next_r = self.next_r
-            seeds = filter(bool, self_res_l)
-            while seeds:
+            seed_res_l = list(filter(bool, self_res_l))
+            while seed_res_l:
                 res_l = []
-                for res in seeds:
+                for res in seed_res_l:
                     echo = next_r.active(res.clone(op=res.ed))
                     if echo == 'OPT' and (not next_r.is_top or (next_r.is_top and not next_r.next_r)) \
                             and res.get_nth(str(id(curr_r))) == 0:
                         res_l.append(res if curr_r.mode is Mode.All else
                                      res.clone(store_t=((curr_r, 0), *res.store_t)))
-                seeds = res_l
+                seed_res_l = res_l
                 if next_r.next_r:
                     curr_r = next_r
                     next_r = next_r.next_r
@@ -464,6 +464,7 @@ class R:
                     next_res_l.extend(res_l)
                     break
         if self.next_r:
+            next_res_l.extend(filter(lambda x: not x, self_res_l))
             return next_res_l
         else:
             return self_res_l
