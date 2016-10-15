@@ -186,10 +186,10 @@ def t_capture_num_merge():
 
 
 def t_open_div():
-    any_char = _(lambda curr_char, curr_args: True)
-    open_div = _(any_char & (~_('>')), '*', name='@X')
-    print(open_div)
-    print(open_div.match('<div></div>'))
+    any_char = _(lambda char, args: True)
+    open_div = _(_('<div')(_(any_char & (~_('>')), '*'), '>'), name='@open_div')
+    assert str(open_div.match('<div></div>')) == "[FT(0, 5){'@open_div': [(0, 5)]}]"
+    assert str(open_div.match('<div class="test"></div>')) == "[FT(0, 18){'@open_div': [(0, 18)]}]"
 
 
 for func in (
@@ -215,6 +215,6 @@ for func in (
         t_xor,
         t_xor_opt,
         t_capture_num_merge,
-        # t_open_div,
+        t_open_div,
 ):
     func()
