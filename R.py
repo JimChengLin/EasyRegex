@@ -397,7 +397,8 @@ class R:
                     nth = res.get_nth(str_id) + 1
                     res.set_nth(str_id, nth)
                     if nth < to_num:
-                        self.active(res.clone(store_t=((self.name, res.op, res.ed), *res.store_t))
+                        self.active(res.clone(store_t=((self.name, res.op, res.ed),
+                                                       *(i for i in res.store_t if i[0] != id(self.target_rule))))
                                     if self.name and from_num <= nth else res)
                     if from_num <= nth <= to_num:
                         res.set_nth(str_id, 0)
