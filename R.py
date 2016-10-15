@@ -482,9 +482,7 @@ class R:
         if self.xor_r:
             xor_echo = self.xor_r.active(prev_res, affect=False)
             echo = 'GO' if xor_echo == echo else 'OPT'
-        elif self.invert:
-            echo = 'GO' if echo == 'OPT' else 'OPT'
-        else:
+        elif not self.invert:
             if echo == 'OPT' and self.and_r:
                 and_echo = self.and_r.active(prev_res, affect=False)
                 if and_echo != 'OPT':

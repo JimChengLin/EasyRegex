@@ -180,7 +180,18 @@ def t_capture_num_merge():
     assert str(m.match('ac')) == "[FT(0, 2){'@a': [(0, 1)]}]"
     assert str(m.match('bc')) == "[FT(0, 2){'@b': [(0, 1)]}]"
     m = _('ab', name='@1') & _('ab', name='@2')
-    assert str(m.match('ab')) == "[FT(0, 2){'@2': [(0, 2)], '@1': [(0, 2)]}]"
+    assert str(m.match('ab')) in ("[FT(0, 2){'@1': [(0, 2)], '@2': [(0, 2)]}]",
+                                  "[FT(0, 2){'@2': [(0, 2)], '@1': [(0, 2)]}]")
+
+
+def t_open_div():
+    any_char = _(lambda curr_char, curr_args: True)
+    any_no = _(any_char & ~_('>'))
+    print(any_no)
+    print(any_no.match('av>>>'))
+    # open_div = _('<div')(_(any_char & (~_('>')), '*', name='@inner'), '>')
+    # print(open_div)
+    # print(open_div.match('<div></div>'))
 
 
 for func in (
@@ -206,5 +217,6 @@ for func in (
         t_xor,
         t_xor_opt,
         t_capture_num_merge,
+        t_open_div,
 ):
     func()
