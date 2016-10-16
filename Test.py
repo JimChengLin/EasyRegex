@@ -216,6 +216,5 @@ for func in (
         t_xor_opt,
         t_capture_num_merge,
         t_div,
-        t_div_or_any,
 ):
     func()
