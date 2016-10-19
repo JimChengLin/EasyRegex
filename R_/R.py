@@ -21,7 +21,6 @@ class Rule:
         self.invert = False
         self.xor_r = None
         self.next_r = None
-        self._is_caller = False
 
         if self.is_matcher:
             self.fa = None
@@ -34,20 +33,6 @@ class Rule:
     @property
     def is_wrapper(self):
         return isinstance(self.target_rule, Rule)
-
-    @property
-    def is_caller(self):
-        return self._is_caller
-
-    @is_caller.setter
-    def is_caller(self, val):
-        cursor = self
-        while True:
-            cursor._is_caller = val
-            if cursor.is_wrapper:
-                cursor = cursor.target_rule
-            else:
-                break
 
     def __and__(self, other):
         other = other.clone()
@@ -124,7 +109,7 @@ class Rule:
             rule.next_r = self.next_r.clone()
         return matcher
 
-    # --- NFA核心部分
+    # --- NFA核心
     def active(self):
         pass
 
