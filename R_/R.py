@@ -109,5 +109,17 @@ class Rule:
             s += str(self.next_r)
         return s
 
-    def clone(self):
-        pass
+    def clone(self, num=None, name=None, mode=None):
+        rule = Rule(self.target_rule if self.is_matcher else self.target_rule.clone(),
+                    self.num_t if num is None else num,
+                    name or self.name, mode or self.mode)
+
+        if self.and_r:
+            rule.and_r = self.and_r.clone()
+        rule.or_r_l[:] = (i.clone() for i in self.or_r_l)
+        if self.xor_r:
+            rule.xor_r = self.xor_r.clone()
+        rule.invert = self.invert
+        if self.next_r:
+            rule.next_r = self.next_r.clone()
+        return matcher
