@@ -21,7 +21,7 @@ class Rule:
         self.invert = False
         self.xor_r = None
         self.next_r = None
-        self._is_top = False
+        self._is_caller = False
 
         if self.is_matcher:
             self.fa = None
@@ -36,14 +36,14 @@ class Rule:
         return isinstance(self.target_rule, Rule)
 
     @property
-    def is_top(self):
-        return self._is_top
+    def is_caller(self):
+        return self._is_caller
 
-    @is_top.setter
-    def is_top(self, val):
+    @is_caller.setter
+    def is_caller(self, val):
         cursor = self
         while True:
-            cursor._is_top = val
+            cursor._is_caller = val
             if cursor.is_wrapper:
                 cursor = cursor.target_rule
             else:
@@ -91,20 +91,23 @@ class Rule:
             s = str(self.target_rule)
 
         if self.xor_r:
-            s = '[{}^{}]'.format(s, self.xor_r)
+            s = '({}^{})'.format(s, self.xor_r)
         elif self.invert:
-            s = '[~{}]'.format(s)
+            s = '(~{})'.format(s)
         else:
             if self.and_r:
-                s = '[{}&{}]'.format(s, self.and_r)
+                s = '({}&{})'.format(s, self.and_r)
             if self.or_r_l:
-                s = '[{}|{}]'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
+                s = '({}|{})'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
 
         num_s = str_n(self.num_t)
         if num_s:
-            if len(s) > 1 and not (s.startswith('[') and s.endswith(']')):
-                s = '[{}]'.format(s)
+            if len(s) > 1 and not (s.startswith('(') and s.endswith(')')):
+                s = '({})'.format(s)
             s += num_s
         if self.next_r:
             s += str(self.next_r)
         return s
+
+    def clone(self):
+        pass
