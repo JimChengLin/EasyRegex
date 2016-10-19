@@ -123,3 +123,13 @@ class Rule:
         if self.next_r:
             rule.next_r = self.next_r.clone()
         return matcher
+
+    # --- NFA核心部分
+    def active(self):
+        pass
+
+    def broadcast(self):
+        pass
+
+    def match(self):
+        pass
