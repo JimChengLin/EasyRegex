@@ -107,7 +107,7 @@ class Rule:
         rule.invert = self.invert
         if self.next_r:
             rule.next_r = self.next_r.clone()
-        return matcher
+        return rule
 
     # --- NFA核心
     def active(self):
