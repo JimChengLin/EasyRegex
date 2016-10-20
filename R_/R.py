@@ -9,7 +9,7 @@ class Mode(Enum):
     Lazy = 'L'
 
 
-class Rule:
+class RuleBasic:
     def __init__(self, target_rule, num=None, name=None, mode=Mode.Greedy):
         self.target_rule = target_rule
         self.num_t = parse_n(num)
@@ -32,7 +32,7 @@ class Rule:
 
     @property
     def is_wrapper(self):
-        return isinstance(self.target_rule, Rule)
+        return isinstance(self.target_rule, RuleBasic)
 
     def __and__(self, other):
         other = other.clone()
@@ -94,11 +94,10 @@ class Rule:
             s += str(self.next_r)
         return s
 
-    # --- NFA核心
     def clone(self, num=None, name=None, mode=None):
-        rule = Rule(self.target_rule if self.is_matcher else self.target_rule.clone(),
-                    self.num_t if num is None else num,
-                    name or self.name, mode or self.mode)
+        rule = RuleBasic(self.target_rule if self.is_matcher else self.target_rule.clone(),
+                         self.num_t if num is None else num,
+                         name or self.name, mode or self.mode)
 
         if self.and_r:
             rule.and_r = self.and_r.clone()
@@ -110,6 +109,9 @@ class Rule:
             rule.next_r = self.next_r.clone()
         return rule
 
+
+# NFA核心
+class Rule(RuleBasic):
     def active(self):
         pass
 
