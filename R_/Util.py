@@ -96,7 +96,8 @@ def make_gen(target, num_t, name):
                     if counter < to_num:
                         inner_gen = gen(
                             echo.clone(capture={**echo.capture, name: [*echo.capture[name], (echo.op, echo.ed)]})
-                            if name and from_num <= counter else echo)
+                            if name and from_num <= counter else
+                            echo)
                         next(inner_gen)
                     if counter < from_num:
                         echo = 'GO'

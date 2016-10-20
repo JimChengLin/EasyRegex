@@ -52,15 +52,15 @@ class Rule:
         self_clone.or_r_l.append(other)
         return self_clone
 
+    def __invert__(self):
+        self_clone = R(self.clone())
+        self_clone.invert = True
+        return R(self_clone)
+
     def __xor__(self, other):
         other = other.clone()
         self_clone = R(self.clone())
         self_clone.xor_r = other
-        return R(self_clone)
-
-    def __invert__(self):
-        self_clone = R(self.clone())
-        self_clone.invert = True
         return R(self_clone)
 
     def __matmul__(self, other):
@@ -94,6 +94,7 @@ class Rule:
             s += str(self.next_r)
         return s
 
+    # --- NFA核心
     def clone(self, num=None, name=None, mode=None):
         rule = Rule(self.target_rule if self.is_matcher else self.target_rule.clone(),
                     self.num_t if num is None else num,
@@ -109,7 +110,6 @@ class Rule:
             rule.next_r = self.next_r.clone()
         return rule
 
-    # --- NFA核心
     def active(self):
         pass
 
