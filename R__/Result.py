@@ -3,7 +3,7 @@ from collections import defaultdict, ChainMap
 
 class Result:
     '''
-    用于记录字符串已匹配部分的开始和结束, 还有沿途捕获的组
+    记录字符串已匹配部分的开始和结束, 还有沿途捕获的组
     调用时要保持只读, 从而在状态机之间安全传递
     '''
 
@@ -31,7 +31,7 @@ class Result:
 
 class Success(Result):
     '''
-    Success 为真
+    __bool__ 为真
     '''
 
     def __bool__(self):
@@ -43,7 +43,7 @@ class Success(Result):
 
 class Fail(Result):
     '''
-    Fail 为假
+    __bool__ 为假
     '''
 
     def __bool__(self):

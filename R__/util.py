@@ -2,13 +2,13 @@ from math import inf
 from typing import Callable
 
 if False:
-    # 用于类型检查的虚拟引入
+    # 用于类型检查的虚拟 import
     from Result import Result
 
 
 def parse_n(num):
     '''
-    将构造状态机时的 num 参数转化为统一的 tuple
+    将构造 R 时的 num 参数转化为统一的 tuple
     约定: 如果是 num 本身就是 tuple, 那么默认长度为 2 且内容类型相同
     '''
     if num is None:
@@ -63,7 +63,7 @@ def explain_n(result: Result, num_t: tuple):
         from_num = len(result.capture.get(from_num, ()))
         to_num = len(result.capture.get(to_num, ()))
 
-    # 函数定义, 传入捕获组, 调用得值
+    # 函数定义, 传入捕获组, 运行得值
     elif isinstance(from_num, Callable):
         from_num = from_num(result.capture)
         to_num = to_num(result.capture)
