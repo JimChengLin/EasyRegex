@@ -31,7 +31,7 @@ class Result:
 
 class Success(Result):
     '''
-    Success态下为真
+    Success 为真
     '''
 
     def __bool__(self):
@@ -43,7 +43,7 @@ class Success(Result):
 
 class Fail(Result):
     '''
-    Fail态下为假
+    Fail 为假
     '''
 
     def __bool__(self):
