@@ -3,8 +3,8 @@ from collections import defaultdict, ChainMap
 
 class Result:
     '''
-    用于记录一个字符串已匹配部分的开始和结束, 还有沿途捕获的组
-    调用时要保持只读, 从而在状态机之间一层一层安全传递
+    用于记录字符串已匹配部分的开始和结束, 还有沿途捕获的组
+    调用时要保持只读, 从而在状态机之间安全传递
     '''
 
     def __init__(self, op: int, ed: int, capture: dict = None):
@@ -19,7 +19,7 @@ class Result:
     def clone(self, **kwargs):
         return Result(**ChainMap(kwargs, self.__dict__))
 
-    # 由于需要对结果取 XOR, NOT, 所以结果有两个状态 Success 和 Fail 态, 并可以互相转化
+    # 由于需要对结果取 XOR, NOT, 所以结果有两个状态 Success 和 Fail, 并可以互相转化
     def as_success(self):
         self.__class__ = Success
         return self

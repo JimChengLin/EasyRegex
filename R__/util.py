@@ -8,8 +8,8 @@ if False:
 
 def parse_n(num):
     '''
-    将构造状态机时的 num 参数, 转化为统一的 tuple
-    约定如果是 num 本身就是 tuple, 那么长度为 2 且内容类型相同
+    将构造状态机时的 num 参数转化为统一的 tuple
+    约定: 如果是 num 本身就是 tuple, 那么默认长度为 2 且内容类型相同
     '''
     if num is None:
         return 1, 1
@@ -40,7 +40,7 @@ def str_n(num_t: tuple):
     '''
     from_num, to_num = num_t
     if isinstance(from_num, Callable):
-        tpl = '%{}%'.format
+        tpl = '${}$'.format
         from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
 
     if from_num == to_num:
@@ -74,15 +74,12 @@ def explain_n(result: Result, num_t: tuple):
 
 def make_gen(target):
     '''
-    此函数接受目标(target)
     返回一个 generator 来抽象状态机
-
-    generator 接收一个 Result 实例化
+    generator 接收一个 Result 来实例化
     '''
 
     if isinstance(target, str):
         # 目标是 str, 则不断拿 send 来的 char 来比对目标中的 char
-        # 全匹配则成功
         def gen(prev_result: Result):
             curr_result = prev_result.clone()
 
