@@ -68,6 +68,7 @@ class R:
             s = '${}$'.format(self.target.__name__)
         else:
             s = str(self.target)
+        s += str_n(self.num_t)
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -80,7 +81,6 @@ class R:
         else:
             s = '({})'.format(s)
 
-        s += str_n(self.num_t)
         if self.next_r:
             s += str(self.next_r)
         return s
