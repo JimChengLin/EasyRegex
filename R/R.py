@@ -28,7 +28,7 @@ class R:
         self.name = name
         self.mode = mode
 
-        # 关系 property, 单个实例中互斥
+        # 逻辑关系单个实例中互斥
         self.and_r = None
         self.or_r = None
         self.invert = False

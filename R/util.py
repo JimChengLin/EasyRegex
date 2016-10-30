@@ -63,7 +63,7 @@ def explain_n(result: Result, num_t: tuple):
         from_num = len(result.capture.get(from_num, ()))
         to_num = len(result.capture.get(to_num, ()))
 
-    # 函数定义, 传入捕获组, 运行得值
+    # 函数定义, 传入捕获组
     elif isinstance(from_num, Callable):
         from_num = from_num(result.capture)
         to_num = to_num(result.capture)
