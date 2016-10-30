@@ -2,8 +2,8 @@ from copy import copy
 from enum import Enum
 from typing import Callable
 
-from Result import Result, Success, Fail
-from util import parse_n, make_gen, str_n, explain_n
+from .Result import Result, Success, Fail
+from .util import parse_n, make_gen, str_n, explain_n
 
 
 class Mode(Enum):

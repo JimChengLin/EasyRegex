@@ -3,7 +3,7 @@ from typing import Callable
 
 if False:
     # 用于类型检查的虚拟 import
-    from Result import Result
+    from .Result import Result
 
 
 def parse_n(num):
