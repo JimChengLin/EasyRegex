@@ -1,5 +1,6 @@
 from copy import copy
 from enum import Enum
+from itertools import chain
 from typing import Callable
 
 from .Result import Result, Success, Fail
@@ -90,9 +91,9 @@ class R:
         return this
 
     # --- core ---
-    def imatch(self, resource: str, prev_result: Result):
+    def imatch(self, resource: str, prev_result: Result, ed: int = None):
         '''
-        imatch 接受两个参数, 匹配的字符串(resource), 上一个状态机生成的结果(prev_result)
+        imatch 接受两个参数, 匹配的字符串(resource), 上一个状态机生成的结果(prev_result), 结果位置(ed, 可选且仅用于逻辑关系)
         返回一个 iter, yield 所有可能结果
 
         字符串匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
@@ -123,7 +124,9 @@ class R:
                         if from_num <= counter <= to_num:
                             yield echo
                         if counter < to_num:
-                            # 未到达边界, 更新 fa
+                            if ed and echo.ed > ed:
+                                return
+                                # 未到达边界, 更新 fa
                             fa = self.gen(echo)
                         else:
                             return
@@ -149,7 +152,8 @@ class R:
                     for echo in self.target.imatch(resource, result):
                         yield echo
                         if echo:
-                            q_b.append(echo)  # 种子
+                            if not ed or echo.ed <= ed:
+                                q_b.append(echo)  # 种子
                         else:
                             break
                     if not q_a:
@@ -158,11 +162,61 @@ class R:
         # num 关系处理完毕
         stream = stream_fab()
 
+        # 处理 ed 关系
+        if ed:
+            def stream_ed_fab():
+                for echo in stream:
+                    if echo.ed == ed:
+                        yield echo
+
+            stream = stream_ed_fab()
+
+        # 处理逻辑关系
+        stream_logic = stream
+
         if self.and_r:
-            pass
+            def stream_and_fab():
+                for echo in stream:
+                    for and_echo in self.and_r.imatch(resource, prev_result, echo.ed):
+                        if and_echo:
+                            yield echo
+                            break
+
+            stream_logic = stream_and_fab()
+
         elif self.or_r:
-            pass
+            stream_logic = chain(stream, self.or_r.imatch(resource, prev_result))
+
         elif self.invert:
-            pass
+            def stream_invert_fab():
+                for echo in stream:
+                    yield echo.invert()
+
+            stream_logic = stream_invert_fab()
+
         elif self.xor_r:
-            pass
+            def stream_xor_fab():
+                for echo in stream:
+                    for xor_echo in self.xor_r.imatch(resource, prev_result, echo.ed):
+                        if bool(xor_echo) != bool(echo):
+                            yield echo or xor_echo
+                            break
+
+            stream_logic = stream_xor_fab()
+
+        # 捕获组
+        stream_name = stream_logic
+
+        if self.name:
+            def stream_name_fab():
+                for echo in stream_logic:
+                    echo.capture = echo.clone(
+                        capture={**echo.capture, name: [*echo.capture, (prev_result.ed, echo.ed)]})
+
+            stream_name = stream_name_fab()
+
+        if self.next_r:
+            for echo in stream_name:
+                yield from self.next_r.imatch(resource, echo)
+        else:
+            yield from stream_name
