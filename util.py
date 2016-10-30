@@ -40,7 +40,7 @@ def str_n(num_t: tuple):
     '''
     from_num, to_num = num_t
     if isinstance(from_num, Callable):
-        tpl = '${}$'.format
+        tpl = '%{}%'.format
         from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
 
     if from_num == to_num:
@@ -75,7 +75,7 @@ def explain_n(result: Result, num_t: tuple):
 def make_gen(target):
     '''
     返回一个 generator 来抽象状态机
-    generator 接收一个 Result 来实例化
+    generator 接受一个 Result 来实例化
     '''
 
     if isinstance(target, str):
@@ -89,10 +89,8 @@ def make_gen(target):
 
                 if recv_char != expect_char:
                     yield curr_result.as_fail()
-                    yield 'DONE'
             # 全匹配
             yield curr_result.as_success()
-            yield 'DONE'
 
     elif isinstance(target, Callable):
         # 目标是函数, 拿 recv_char 执行一次, 根据真假返回结果
@@ -105,7 +103,6 @@ def make_gen(target):
                 yield curr_result.as_success()
             else:
                 yield curr_result.as_fail()
-            yield 'DONE'
 
     else:
         raise TypeError

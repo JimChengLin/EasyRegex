@@ -1,534 +1,151 @@
-from collections import ChainMap
+from copy import copy
 from enum import Enum
-from itertools import chain
-from math import inf
-from typing import Iterable, Callable
+from typing import Callable
 
-
-class Res:
-    def __init__(self, epoch: int, op: int, ed: int = None, store_t=()):
-        self.epoch = epoch
-        self.op = op
-
-        self.ed = ed if ed is not None else op
-        # @ => capture
-        # R => AGL
-        # id => op
-        # str(id) => nth
-        self.store_t = store_t
-
-    @property
-    def capture(self):
-        d = {}
-        for k, *item in self.store_t:
-            if isinstance(k, str) and k.startswith('@'):
-                op, ed = item
-                d.setdefault(k, []).append((op, ed))
-        return d
-
-    def __repr__(self):
-        return 'FT({}, {}){}'.format(self.epoch, self.ed, self.capture or '')
-
-    def __eq__(self, other):
-        if isinstance(other, Res):
-            return self.epoch == other.epoch and self.ed == other.ed
-
-    def get_nth(self, str_id: str):
-        for k, *item in self.store_t:
-            if isinstance(k, str) and k == str_id:
-                return item[0]
-        return 0
-
-    def set_nth(self, str_id: str, val: int):
-        self.store_t = (*(((str_id, val),) if val != 0 else ()),
-                        *(i for i in self.store_t if i[0] != str_id))
-
-    def clone(self, **kwargs):
-        return Res(**ChainMap(kwargs, self.__dict__))
-
-    def as_success(self):
-        self.__class__ = Success
-        return self
-
-    def as_fail(self):
-        self.__class__ = Fail
-        return self
-
-    def to_args(self):
-        return self.epoch, self.ed, self.capture
-
-
-class Success(Res):
-    def invert(self):
-        return self.as_fail()
-
-    def __bool__(self):
-        return True
-
-
-class Fail(Res):
-    def invert(self):
-        return self.as_success()
-
-    def __bool__(self):
-        return False
-
-
-def make_gen(target, num_t: tuple, name: str):
-    if isinstance(target, Iterable):
-        def gen(prev_res: Res):
-            res = prev_res.clone()
-            for expect in target:
-                recv = yield 'GO'
-                res.ed += 1
-                if recv != expect:
-                    yield res.as_fail()
-                    yield 'DONE'
-            yield res.as_success()
-            yield 'DONE'
-    elif isinstance(target, Callable):
-        def gen(prev_res: Res):
-            res = prev_res.clone()
-            recv = yield 'GO'
-            res.ed += 1
-            try:
-                accept = target(recv, res.to_args())
-            except TypeError:
-                accept = False
-            if accept:
-                yield res.as_success()
-            else:
-                yield res.as_fail()
-            yield 'DONE'
-    else:
-        raise Exception
-
-    if num_t == (1, 1):
-        return gen
-    else:
-        def decorate_gen(prev_res: Res):
-            from_num, to_num = explain_n(prev_res, num_t)
-            curr_state = 'OPT' if from_num == 0 else 'GO'
-            if to_num == 0:
-                yield curr_state
-
-            counter = 0
-            inner_gen = gen(prev_res)
-            next(inner_gen)
-            while counter < to_num:
-                recv = yield curr_state
-                echo = inner_gen.send(recv)
-                if isinstance(echo, Success):
-                    counter += 1
-                    if counter < to_num:
-                        inner_gen = gen(echo.clone(store_t=((name, echo.op, echo.ed), *echo.store_t))
-                                        if name and from_num <= counter else echo)
-                        next(inner_gen)
-                    if counter < from_num:
-                        echo = 'GO'
-                    if counter == to_num:
-                        yield echo
-                elif isinstance(echo, Fail):
-                    yield echo
-                    break
-                curr_state = echo
-            yield 'DONE'
-
-        return decorate_gen
-
-
-def parse_n(num):
-    if num is None:
-        return 1, 1
-    if isinstance(num, (int, Callable)):
-        return num, num
-    if isinstance(num, tuple):
-        return num
-    if isinstance(num, str):
-        if num == '*':
-            return 0, inf
-        if num == '+':
-            return 1, inf
-        if num.startswith('@'):
-            return num, num
-        if num.startswith('{') and num.endswith('}'):
-            num = num[1:-1]
-            num = tuple(map(int, num.split(',')))
-            if len(num) == 1:
-                num *= 2
-            return num
-    raise Exception
-
-
-def str_n(num_t: tuple):
-    from_num, to_num = num_t
-    if isinstance(from_num, Callable):
-        tpl = '%{}%'.format
-        from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
-    if from_num == to_num:
-        if from_num == 1:
-            return ''
-        return '{' + str(from_num) + '}'
-    else:
-        return '{' + str(from_num) + ',' + str(to_num) + '}'
-
-
-def explain_n(res: Res, num_t: tuple):
-    from_num, to_num = num_t
-    if isinstance(from_num, str):
-        from_num = to_num = len(res.capture.get(from_num, ()))
-    elif isinstance(from_num, Callable):
-        from_num, to_num = from_num(*res.to_args()), to_num(*res.to_args())
-    assert 0 <= from_num <= to_num
-    return from_num, to_num
+from Result import Result, Success, Fail
+from util import parse_n, make_gen, str_n, explain_n
 
 
 class Mode(Enum):
-    All = 'A'
+    '''
+    贪心匹配 Mode.Greedy
+    懒惰匹配 Mode.Lazy
+    '''
     Greedy = 'G'
     Lazy = 'L'
 
 
-def agl_update(res_l: list):
-    update_res_l = []
-    for res in filter(bool, res_l):
-        for k, *item in res.store_t:
-            if isinstance(k, R):
-                length, = item
-                k.best_length = max(length, k.best_length or 0) if k.mode is Mode.Greedy else \
-                    min(length, k.best_length if k.best_length is not None else inf)
-        update_res_l.append(res)
-    return update_res_l
-
-
-def agl_filter(res_l: list):
-    filter_res_l = []
-    for res in res_l:
-        for k, *item in res.store_t:
-            if isinstance(k, R):
-                length, = item
-                if k.mode is Mode.Greedy:
-                    if length < (k.best_length or 0):
-                        break
-                else:
-                    if length > (k.best_length if k.best_length is not None else inf):
-                        break
-        else:
-            filter_res_l.append(res)
-    return filter_res_l
-
-
 class R:
-    def __init__(self, target_rule, num=None, name: str = None, mode=Mode.All):
-        self.target_rule = target_rule
+    '''
+    正则表达式解析引擎
+    '''
+
+    # --- basic ---
+    def __init__(self, target, num=None, name: str = None, mode=Mode.Greedy):
+        self.target = target
         self.num_t = parse_n(num)
         self.name = name
         self.mode = mode
 
+        # 关系 property, 单个实例中互斥
         self.and_r = None
-        self.or_r_l = []
+        self.or_r = None
+        self.invert = False
+        self.xor_r = None
         self.next_r = None
 
-        self.xor_r = None
-        self.invert = False
-        self._is_top = False
-
-        if self.is_matcher:
-            self.fa_l = []
-            self.gen = make_gen(self.target_rule, self.num_t, self.name)
-        if self.mode is not Mode.All:
-            self.best_length = None
-
-    @property
-    def is_matcher(self):
-        return not self.is_wrapper
-
-    @property
-    def is_wrapper(self):
-        return isinstance(self.target_rule, R)
-
-    @property
-    def is_top(self):
-        return self._is_top
-
-    @is_top.setter
-    def is_top(self, val: bool):
-        cursor = self
-        while True:
-            cursor._is_top = val
-            if cursor.is_wrapper:
-                cursor = cursor.target_rule
-            else:
-                break
+        # 状态机 generator
+        self.gen = make_gen(target) if not isinstance(target, R) else None
 
     def __and__(self, other: 'R'):
-        other = other.clone()
-        self_clone = self.clone()
-        if self_clone.or_r_l:
-            cursor = self_clone = R(self_clone)
-        else:
-            cursor = self_clone
-            while cursor.and_r is not None:
-                cursor = cursor.and_r
-        cursor.and_r = other
-        return self_clone
+        this = self.clone()
+        this.and_r = other
+        return R(this)
 
     def __or__(self, other: 'R'):
-        other = other.clone()
-        self_clone = self.clone()
-        self_clone.or_r_l.append(other)
-        return self_clone
-
-    def __xor__(self, other: 'R'):
-        other = other.clone()
-        self_clone = R(self.clone())
-        self_clone.xor_r = other
-        return R(self_clone)
+        this = self.clone()
+        this.or_r = other
+        return R(this)
 
     def __invert__(self):
-        self_clone = R(self.clone())
-        self_clone.invert = True
-        return R(self_clone)
+        this = self.clone()
+        this.invert = True
+        return R(this)
 
-    def __call__(self, *other_l):
-        self_clone = self.clone()
-        if not other_l:
-            return self_clone
-        cursor = self_clone
-        for other in other_l:
-            assert cursor.next_r is None
-            other = other.clone() if isinstance(other, R) else R(other)  # 自动转化
-            cursor.next_r = other
-            cursor = other
-        return R(self_clone)
+    def __xor__(self, other: 'R'):
+        this = self.clone()
+        this.or_r = other
+        return R(this)
+
+    # @在 Python 中表示矩阵乘法, 非常近似于 next
+    def __matmul__(self, other: 'R'):
+        this = self.clone()
+        this.next_r = other
+        return R(this)
 
     def __repr__(self):
-        if self.is_matcher and isinstance(self.target_rule, Callable):
-            s = '%{}%'.format(self.target_rule.__name__)
+        if self.gen and isinstance(self.target, Callable):
+            s = '%{}%'.format(self.target.__name__)
         else:
-            s = str(self.target_rule)
+            s = str(self.target)
+        s = '({}{})'.format(s, str_n(self.num_t))
 
-        def group():
-            return '[{}]'.format(s)
-
-        def is_group():
-            return s.startswith('[') and s.endswith(']')
-
-        if self.xor_r:
-            s = '[{}^{}]'.format(s, self.xor_r)
+        if self.and_r:
+            s = '({}&{})'.format(s, self.and_r)
+        elif self.or_r:
+            s = '({}|{})'.format(s, self.or_r)
         elif self.invert:
-            s = '[~{}]'.format(s)
-        else:
-            if self.and_r:
-                s = '{}&{}'.format(s, self.and_r)
-            if (self.and_r or (self.is_wrapper and self.target_rule.and_r)) and self.next_r and not is_group():
-                s = group()
-            if self.or_r_l:
-                s = '[{}|{}]'.format(s, '|'.join(str(or_r) for or_r in self.or_r_l))
+            s = '(~{})'.format(s)
+        elif self.xor_r:
+            s = '({}^{})'.format(s, self.xor_r)
 
-        num_str = str_n(self.num_t)
-        if num_str:
-            if len(s) > 1 and not is_group():
-                s = group()
-            s += num_str
         if self.next_r:
             s += str(self.next_r)
         return s
 
-    def broadcast(self, char=None, char_l: list = None):
-        if char is None:
-            if self.is_matcher:
-                self.fa_l.clear()
-            if self.mode is not Mode.All:
-                self.best_length = None
-        if self.next_r:
-            next_res_l = self.next_r.broadcast(char, char_l)
+    def clone(self, **kwargs):
+        this = copy(self)
+        for k, v in kwargs.items():
+            setattr(this, k, v)
+        return this
 
-        if self.is_matcher:
-            self_res_l = []
-            if self.fa_l:
-                fa_l = []
-                for fa in self.fa_l:
-                    echo = fa.send(char)
-                    if echo != 'DONE':
-                        fa_l.append(fa)
-                    if isinstance(echo, Res):
-                        self_res_l.append(echo)
-                self.fa_l = fa_l
-        else:
-            self_res_l = self.target_rule.broadcast(char, char_l)
-            res_l = []
-            for res in self_res_l:
-                if self.xor_r:
-                    for k, *item in res.store_t:
-                        # active时已存入store_t
-                        if isinstance(k, int) and k == id(self):
-                            op, = item
-                            break
-                    echo = self.xor_r.active(res.clone(ed=res.op, store_t=(
-                        (id(self.xor_r), op),) if self.xor_r.and_r or self.xor_r.xor_r else ()))
-                    for char in char_l[op + 1:res.ed + 1]:
-                        xor_res_l = self.xor_r.broadcast(char, char_l)
-                    self.xor_r.broadcast()
-                    if echo == 'OPT':
-                        xor_res_l.append(res.clone(store_t=()).as_success())
+    # --- core ---
+    def imatch(self, resource: str, prev_result: Result):
+        '''
+        imatch 接受两个参数, 匹配的字符串(resource), 上一个状态机生成的结果(prev_result)
+        返回一个 iter, yield 所有可能的结果
 
-                    if res:
-                        res.as_fail()
-                        for xor_res in xor_res_l:
-                            if not xor_res:
-                                res.as_success()
-                                res.store_t += tuple(i for i in xor_res.store_t if i[0] == self.xor_r.name) \
-                                    if self.xor_r.name else ()
-                        if not xor_res_l:
-                            res.as_success()
-                    else:
-                        for xor_res in xor_res_l:
-                            if xor_res:
-                                res.as_success()
-                                res.store_t += tuple(i for i in xor_res.store_t if i[0] == self.xor_r.name) \
-                                    if self.xor_r.name else ()
-                elif self.invert:
-                    res.invert()
+        字符串匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
+        '''
+        # 约定: from_num 和 to_num 在匹配开始时就已经完全确定
+        from_num, to_num = explain_n(prev_result, self.num_t)
 
-                if not res:
-                    res_l.append(res)
-                else:
-                    from_num, to_num = explain_n(res, self.num_t)
-                    str_id = str(id(self))
-                    nth = res.get_nth(str_id) + 1
-                    res.set_nth(str_id, nth)
-                    if nth < to_num:
-                        res.store_t = tuple(i for i in res.store_t if i[0] != id(self.target_rule))
-                        self.active(res.clone(store_t=((self.name, res.op, res.ed), *res.store_t))
-                                    if self.name and from_num <= nth else res)
-                    if from_num <= nth <= to_num:
-                        res.set_nth(str_id, 0)
-                        res_l.append(res)
-            self_res_l = res_l
-
-        if self.and_r:
-            for res in self_res_l:
-                if not res:
-                    continue
-                else:
-                    for k, *item in res.store_t:
-                        if isinstance(k, int) and k == id(self):
-                            op, = item
-                            break
-                    echo = self.and_r.active(res.clone(ed=res.op, store_t=(
-                        (id(self.and_r), op),) if self.and_r.and_r or self.and_r.xor_r else ()))
-                    for char in char_l[op + 1:res.ed + 1]:
-                        and_res_l = self.and_r.broadcast(char, char_l)
-                    self.and_r.broadcast()
-                    if echo == 'OPT':
-                        and_res_l.append(res.clone(store_t=()))
-
-                    res.as_fail()
-                    for and_res in and_res_l:
-                        if and_res:
-                            res.as_success()
-                            res.store_t += tuple(i for i in and_res.store_t if i[0] == self.and_r.name) \
-                                if self.and_r.name else ()
-
-        if self.name or self.mode is not Mode.All:
-            for res in filter(bool, self_res_l):
-                for k, *item in res.store_t:
-                    if isinstance(k, int) and k == id(self):
-                        op, = item
-                        break
-                res.store_t = (*(((self.name, op, res.ed),) if self.name else ()),
-                               *(((self, res.ed - res.op),) if self.mode is not Mode.All else ()),
-                               *res.store_t)
-        self_res_l = agl_filter(self_res_l)
-
-        for or_r in self.or_r_l:
-            self_res_l.extend(or_r.broadcast(char, char_l))
-        if self.next_r:
-            curr_r = self
-            next_r = self.next_r
-            seed_res_l = list(filter(bool, self_res_l))
-            while seed_res_l:
-                res_l = []
-                for res in seed_res_l:
-                    echo = next_r.active(res.clone(op=res.ed))
-                    if echo == 'OPT' and (not next_r.is_top or (next_r.is_top and not next_r.next_r)) \
-                            and res.get_nth(str(id(curr_r))) == 0:
-                        res_l.append(res if curr_r.mode is Mode.All else
-                                     res.clone(store_t=((curr_r, 0), *res.store_t)))
-                seed_res_l = res_l
-                if next_r.next_r:
-                    curr_r = next_r
-                    next_r = next_r.next_r
-                else:
-                    next_res_l.extend(res_l)
-                    break
-        if self.next_r:
-            next_res_l.extend(filter(lambda x: not x, self_res_l))
-            return next_res_l
-        else:
-            return self_res_l
-
-    def active(self, prev_res: Res, affect=True):
-        prev_res = prev_res.clone()
-        if not any(filter(lambda x: x[0] == id(self), prev_res.store_t)):
-            prev_res.store_t = ((id(self), prev_res.ed), *prev_res.store_t)
-        if self.is_matcher:
-            fa = self.gen(prev_res)
-            echo = next(fa)
-            if affect:
-                self.fa_l.append(fa)
-        else:
-            echo = self.target_rule.active(prev_res, affect)
-            if echo == 'GO':
-                from_num, _ = explain_n(prev_res, self.num_t)
+        if self.gen:
+            # 已递归到最里层
+            # 定义一个 iter, 在有效数量区间内 yield 所有成功结果, 直到一个失败结果(包含)
+            def stream():
                 if from_num == 0:
-                    echo = 'OPT'
+                    # 可选匹配, yield 成功
+                    yield prev_result  # 必然成功态, 无需转换
+                if to_num == 0:
+                    # 不会匹配到更多, 迭代结束
+                    return
 
-        if self.xor_r:
-            xor_echo = self.xor_r.active(prev_res, affect=False)
-            echo = 'GO' if xor_echo == echo else 'OPT'
-        if echo == 'OPT' and self.and_r:
-            and_echo = self.and_r.active(prev_res, affect=False)
-            if and_echo != 'OPT':
-                echo = 'GO'
-        for or_r in self.or_r_l:
-            or_r_echo = or_r.active(prev_res)
-            if or_r_echo == 'OPT':
-                echo = 'OPT'
-        if self.next_r and echo == 'OPT' and self.is_top and prev_res.get_nth(str(id(self))) == 0:
-            self.next_r.active(prev_res if self.mode is Mode.All else
-                               prev_res.clone(store_t=((self, 0), *prev_res.store_t)))
-        return echo
+                counter = 0
+                fa = self.gen(prev_result)
+                for char in resource[prev_result.ed:]:
+                    echo = fa.send(char)
 
-    def match(self, source: Iterable):
-        self.is_top = True
-        res_l = []
-        char_l = []
-        for i, char in enumerate(chain([EOF], source, [EOF])):
-            char_l.append(char)
-            self.active(Res(i - 1, i - 1))
-            res_l.extend(agl_update(self.broadcast(char, char_l)))
-        res_l = agl_filter(res_l)
-        self.broadcast()
-        self.is_top = False
-        return res_l
+                    if echo == 'GO':
+                        continue
+                    elif isinstance(echo, Success):
+                        counter += 1
+                        if from_num <= counter <= to_num:
+                            yield echo
+                        if counter < to_num:
+                            # 未到达边界, 更新 fa
+                            fa = self.gen(echo)
+                        else:
+                            return
+                    elif isinstance(echo, Fail):
+                        yield echo
+                        return
+        else:
+            def stream():
+                # imatch 的 echo 只有可能是 Success 或者 Fail
+                counter = 0
+                for echo in self.target.imatch(resource, prev_result):
+                    if echo:
+                        counter += 1
+                        if from_num <= counter <= to_num:
+                            yield echo
+                        if counter == to_num:
+                            return
+                    else:
+                        yield echo
+                        return
 
-    def clone(self, num=None, name: str = None, mode: Mode = None):
-        matcher = R(self.target_rule if self.is_matcher else self.target_rule.clone(),
-                    self.num_t if num is None else num,
-                    name or self.name,
-                    mode or self.mode)
-        if self.and_r:
-            matcher.and_r = self.and_r.clone()
-        matcher.or_r_l[:] = (i.clone() for i in self.or_r_l)
-        if self.xor_r:
-            matcher.xor_r = self.xor_r.clone()
-        matcher.invert = self.invert
-        if self.next_r:
-            matcher.next_r = self.next_r.clone()
-        return matcher
-
-
-class EOF:
-    pass
+            stream = stream()  # 实例化
+            # 处理 AND, OR, NOT, XOR 关系, 上面已处理完了 num 的关系
+            for echo in stream:
+                pass
