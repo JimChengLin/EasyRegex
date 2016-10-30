@@ -106,7 +106,7 @@ class R:
             def stream_fab():
                 if from_num == 0:
                     # 可选匹配
-                    yield prev_result  # 必然成功态, 无需转换
+                    yield prev_result  # 必然成功态
                 if to_num == 0:
                     # 不会匹配到更多
                     return
@@ -133,7 +133,6 @@ class R:
 
         else:
             def stream_fab():
-                # imatch 的 echo 只有可能是 Success 或者 Fail, 但可能有多个 echo
                 if from_num == 0:
                     yield prev_result
                 if to_num == 0:
@@ -142,16 +141,16 @@ class R:
                 # 使用 2 个 queue 来 DFS
                 q_a = [prev_result]
                 q_b = []
-
                 counter = 1
                 while q_a and from_num <= counter <= to_num:
                     result = q_a.pop()
+
+                    # echo 只可能是 Success 或者 Fail, 但可能有多个 echo
                     for echo in self.target.imatch(resource, result):
+                        yield echo
                         if echo:
-                            q_b.append(echo)
-                            yield echo
+                            q_b.append(echo)  # 种子
                         else:
-                            yield echo
                             break
                     if not q_a:
                         counter += 1
