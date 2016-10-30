@@ -30,10 +30,6 @@ class Result:
 
 
 class Success(Result):
-    '''
-    __bool__ 为真
-    '''
-
     def __bool__(self):
         return True
 
@@ -42,10 +38,6 @@ class Success(Result):
 
 
 class Fail(Result):
-    '''
-    __bool__ 为假
-    '''
-
     def __bool__(self):
         return False
 

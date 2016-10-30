@@ -2,6 +2,7 @@ from copy import copy
 from enum import Enum
 from typing import Callable
 
+from Result import Result
 from util import parse_n, make_gen, str_n
 
 
@@ -26,7 +27,7 @@ class R:
         self.name = name
         self.mode = mode
 
-        # 关系描述, 只能变更其中一项
+        # 关系 property, 单个实例中互斥
         self.and_r = None
         self.or_r = None
         self.invert = False
@@ -91,8 +92,18 @@ class R:
         return this
 
     # --- core
-    def imatch(self):
-        pass
+    def imatch(self, resource: str, prev_result: Result):
+        '''
+        每个 imatch要做的工作都非常简单, 给定一个prev_result, 然后不断返回可能的结果
+        这是一个iter, 概念类似 pipe
+        先不考虑num
+        '''
+        if self.gen:
+            fa = self.gen(prev_result)
+            for i in resource[prev_result.ed:]:
+                echo = fa.send(i)
+                if 1:
+                    pass
 
     def match(self):
         pass
