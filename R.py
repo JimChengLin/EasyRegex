@@ -93,7 +93,7 @@ class R:
     def imatch(self, resource: str, prev_result: Result):
         '''
         imatch 接受两个参数, 匹配的字符串(resource), 上一个状态机生成的结果(prev_result)
-        返回一个 iter, yield 所有可能的结果
+        返回一个 iter, yield 所有可能结果
 
         字符串匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
         '''
@@ -102,13 +102,13 @@ class R:
 
         if self.gen:
             # 已递归到最里层
-            # 定义一个 iter, 在有效数量区间内 yield 所有成功结果, 直到一个失败结果(包含)
-            def stream():
+            # 定义一个 iter, yield 有效数量区间内所有成功结果, 直到一个失败结果(包含)或字符串耗尽
+            def stream_fab():
                 if from_num == 0:
-                    # 可选匹配, yield 成功
+                    # 可选匹配
                     yield prev_result  # 必然成功态, 无需转换
                 if to_num == 0:
-                    # 不会匹配到更多, 迭代结束
+                    # 不会匹配到更多
                     return
 
                 counter = 0
@@ -130,22 +130,40 @@ class R:
                     elif isinstance(echo, Fail):
                         yield echo
                         return
-        else:
-            def stream():
-                # imatch 的 echo 只有可能是 Success 或者 Fail
-                counter = 0
-                for echo in self.target.imatch(resource, prev_result):
-                    if echo:
-                        counter += 1
-                        if from_num <= counter <= to_num:
-                            yield echo
-                        if counter == to_num:
-                            return
-                    else:
-                        yield echo
-                        return
 
-            stream = stream()  # 实例化
-            # 处理 AND, OR, NOT, XOR 关系, 上面已处理完了 num 的关系
-            for echo in stream:
-                pass
+        else:
+            def stream_fab():
+                # imatch 的 echo 只有可能是 Success 或者 Fail, 但可能有多个 echo
+                if from_num == 0:
+                    yield prev_result
+                if to_num == 0:
+                    return
+
+                # 使用 2 个 queue 来 DFS
+                q_a = [prev_result]
+                q_b = []
+
+                counter = 1
+                while q_a and from_num <= counter <= to_num:
+                    result = q_a.pop()
+                    for echo in self.target.imatch(resource, result):
+                        if echo:
+                            q_b.append(echo)
+                            yield echo
+                        else:
+                            yield echo
+                            break
+                    if not q_a:
+                        counter += 1
+                        q_a, q_b = q_b, q_a
+        # num 关系处理完毕
+        stream = stream_fab()
+
+        if self.and_r:
+            pass
+        elif self.or_r:
+            pass
+        elif self.invert:
+            pass
+        elif self.xor_r:
+            pass
