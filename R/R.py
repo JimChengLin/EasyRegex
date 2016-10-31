@@ -18,7 +18,7 @@ class Mode(Enum):
 
 class R:
     '''
-    正则表达式解析引擎
+    正则表达式引擎
     '''
 
     # --- basic ---
@@ -35,7 +35,7 @@ class R:
         self.xor_r = None
         self.next_r = None
 
-        # 状态机 generator
+        # 状态机
         self.gen = make_gen(target) if not isinstance(target, R) else None
 
     def __and__(self, other: 'R'):
