@@ -139,21 +139,26 @@ class R:
                     return
 
                 # DFS
-                counter_1_iter = (for echo in self.target.imatch(resource, prev_result))
-                counter_2_iter = (for echo in (self.target.imatch(resource, i) for i in counter_1_iter if i))
-                counter_3_iter = (for echo in (self.target.imatch(resource, i) for i in counter_2_iter if i))
+                counter = 1
+                curr_iter = (echo for echo in self.target.imatch(resource, prev_result))
+                while counter < from_num:
+                    curr_iter = (echo for echo in (self.target.imatch(resource, i) for i in curr_iter if i))
+
+                save_q = []
+
+                def save2q(ip):
+                    save_q.append(ip)
+                    return ip
+
+                while counter < to_num:
+                    curr_iter = (save2q(echo) for echo in (self.target.imatch(resource, i) for i in curr_iter if i))
+                for i in curr_iter:
+                    while save_q:
+                        yield save_q.pop()
+                    yield i
 
         # num 关系处理完毕
         stream = stream_fab()
-
-        # 处理 ed 关系
-        if ed:
-            def stream_ed_fab():
-                for echo in stream:
-                    if echo.ed == ed:
-                        yield echo
-
-            stream = stream_ed_fab()
 
         # 处理逻辑关系
         stream_logic = stream
@@ -161,8 +166,8 @@ class R:
         if self.and_r:
             def stream_and_fab():
                 for echo in stream:
-                    for and_echo in self.and_r.imatch(resource, prev_result, echo.ed):
-                        if and_echo:
+                    for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
+                        if and_echo.ed == echo.ed - prev_result.ed and and_echo:
                             yield echo
                             break
 
@@ -181,10 +186,16 @@ class R:
         elif self.xor_r:
             def stream_xor_fab():
                 for echo in stream:
-                    for xor_echo in self.xor_r.imatch(resource, prev_result, echo.ed):
-                        if bool(xor_echo) != bool(echo):
-                            yield echo or xor_echo
-                            break
+                    if echo:
+                        for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
+                            if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
+                                break
+                        else:
+                            yield echo
+                    else:
+                        for xor_echo in self.xor_r.imatch(resource, prev_result):
+                            if xor_echo:
+                                yield xor_echo
 
             stream_logic = stream_xor_fab()
 
