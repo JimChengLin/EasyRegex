@@ -2,7 +2,7 @@ from math import inf
 from typing import Callable
 
 if False:
-    # 用于类型检查的虚拟 import
+    # 仅用于类型检查
     from .Result import Result
 
 
@@ -77,7 +77,6 @@ def make_gen(target):
     返回一个 generator 来抽象状态机
     generator 接受一个 Result 来实例化
     '''
-
     if isinstance(target, str):
         # 目标是 str, 则不断拿 send 来的 char 来比对目标中的 char
         def gen(prev_result: Result):
@@ -93,7 +92,7 @@ def make_gen(target):
             yield curr_result.as_success()
 
     elif isinstance(target, Callable):
-        # 目标是函数, 拿 recv_char 执行一次, 根据真假返回结果
+        # 目标是函数, 以 recv_char 执行一次, 根据真假返回结果
         def gen(prev_result: Result):
             curr_result = prev_result.clone()
             recv_char = yield 'GO'

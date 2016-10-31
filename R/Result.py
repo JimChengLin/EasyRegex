@@ -3,8 +3,8 @@ from collections import defaultdict, ChainMap
 
 class Result:
     '''
-    记录字符串已匹配部分的开始和结束, 还有沿途捕获的组
-    调用时要保持只读, 从而在状态机之间安全传递
+    记录字符串已匹配的开始和结束, 以及沿途捕获的组
+    使用时保持只读, 从而在状态机之间安全传递
     '''
 
     def __init__(self, op: int, ed: int, capture: dict = None):
