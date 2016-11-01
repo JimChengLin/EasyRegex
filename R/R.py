@@ -227,15 +227,23 @@ class R:
 
     # todo: need further develop
     def match(self, resource: str):
-        success = None
-        for echo in self.imatch(resource, Result(0, 7)):
-            if echo:
-                if success:
-                    if echo.ed > success.ed:
-                        success = echo
-                else:
-                    success = echo
-        return success
+        result = []
+        seed = Result(0, 0)
+        while seed.ed < len(resource):
+            longest_this_term = None
+            for echo in self.imatch(resource, seed):
+                if echo:
+                    if longest_this_term:
+                        if echo.ed > longest_this_term.ed:
+                            longest_this_term = echo
+                    else:
+                        longest_this_term = echo
+            if longest_this_term:
+                result.append(longest_this_term)
+                seed = Result(longest_this_term.ed, longest_this_term.ed)
+            else:
+                seed = Result(seed.ed + 1, seed.ed + 1)
+        return result
 
 
 r = R
