@@ -58,7 +58,7 @@ class R:
         this.or_r = other
         return R(this)
 
-    # @在 Python 中表示矩阵乘法, 非常近似于 next
+    # @ 在 Python 中表示矩阵乘法, 非常近似于 next
     def __matmul__(self, other: 'R'):
         this = self.clone()
         this.next_r = other
@@ -93,7 +93,7 @@ class R:
     # --- core ---
     def imatch(self, resource: str, prev_result: Result):
         '''
-        接受 2 个参数, 匹配的字符串(resource), 上一个状态机生成的结果(prev_result)
+        接受 2 个参数, 匹配的字符串(resource), 上一个状态机的结果(prev_result)
         返回 iter, yield 所有合法结果
 
         正则匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
@@ -103,7 +103,7 @@ class R:
 
         if self.gen:
             # 已递归到最里层
-            def stream_num():
+            def stream_0():
                 if from_num == 0:
                     # 可选匹配
                     yield prev_result
@@ -123,7 +123,7 @@ class R:
                         if from_num <= counter <= to_num:
                             yield echo
                         if counter < to_num:
-                            # 未到达边界, 更新 fa
+                            # 未到达边界, 置换 fa
                             fa = self.gen(echo)
                         else:
                             return
@@ -132,7 +132,7 @@ class R:
                         return
 
         else:
-            def stream_num():
+            def stream_0():
                 if from_num == 0:
                     yield prev_result
                 if to_num == 0:
@@ -166,24 +166,25 @@ class R:
                     yield echo
 
         if self.and_r:
-            def stream_logic():
-                for echo in stream_num():
+            def stream_1():
+                for echo in stream_0():
                     for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                         if and_echo.ed == echo.ed - prev_result.ed and and_echo:
                             yield echo
                             break
 
         elif self.or_r:
-            stream_logic = chain(stream_num(), self.or_r.imatch(resource, prev_result))
+            def stream_1():
+                yield from chain(stream_0(), self.or_r.imatch(resource, prev_result))
 
         elif self.invert:
-            def stream_logic():
-                for echo in stream_num():
+            def stream_1():
+                for echo in stream_0():
                     yield echo.invert()
 
         elif self.xor_r:
-            def stream_logic():
-                for echo in stream_num():
+            def stream_1():
+                for echo in stream_0():
                     if echo:
                         for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                             if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
@@ -194,20 +195,23 @@ class R:
                         for xor_echo in self.xor_r.imatch(resource, prev_result):
                             if xor_echo:
                                 yield xor_echo
+
         else:
-            stream_logic = stream_num
+            def stream_1():
+                yield from stream_0()
 
         # 捕获组
         if self.name:
-            def stream_name():
-                for echo in stream_logic():
+            def stream_2():
+                for echo in stream_1():
                     echo.capture = echo.clone(
-                        capture={**echo.capture, self.name: [*echo.capture, (prev_result.ed, echo.ed)]})
+                        capture={**echo.capture, self.name: [*echo.capture[self.name], (prev_result.ed, echo.ed)]})
         else:
-            stream_name = stream_logic
+            def stream_2():
+                yield from stream_1()
 
         if self.next_r:
-            for echo in stream_name():
+            for echo in stream_2():
                 yield from self.next_r.imatch(resource, echo)
         else:
-            yield from stream_name()
+            yield from stream_2()
