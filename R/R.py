@@ -103,7 +103,7 @@ class R:
 
         if self.gen:
             # 已递归到最里层
-            def stream_fab():
+            def stream_num():
                 if from_num == 0:
                     # 可选匹配
                     yield prev_result
@@ -132,7 +132,7 @@ class R:
                         return
 
         else:
-            def stream_fab():
+            def stream_num():
                 if from_num == 0:
                     yield prev_result
                 if to_num == 0:
@@ -142,50 +142,48 @@ class R:
                 counter = 1
                 curr_iter = (echo for echo in self.target.imatch(resource, prev_result))
                 while counter < from_num:
-                    curr_iter = (echo for echo in (self.target.imatch(resource, i) for i in curr_iter if i))
+                    counter += 1
+                    curr_iter = (echo for echo in
+                                 chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
 
-                save_q = []
+                q = []
 
-                def save2q(ip):
-                    save_q.append(ip)
-                    return ip
+                def tunnel(echo):
+                    q.append(echo)
+                    return echo
 
                 while counter < to_num:
-                    curr_iter = (save2q(echo) for echo in (self.target.imatch(resource, i) for i in curr_iter if i))
-                for i in curr_iter:
-                    while save_q:
-                        yield save_q.pop()
-                    yield i
+                    counter += 1
+                    curr_iter = (echo for echo in
+                                 chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
+                    if counter != to_num:
+                        curr_iter = map(tunnel, curr_iter)
 
-        # num 关系处理完毕
-        stream = stream_fab()
-
-        # 处理逻辑关系
-        stream_logic = stream
+                for echo in curr_iter:
+                    if q:
+                        yield from q
+                        q.clear()
+                    yield echo
 
         if self.and_r:
-            def stream_and_fab():
-                for echo in stream:
+            def stream_logic():
+                for echo in stream_num():
                     for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                         if and_echo.ed == echo.ed - prev_result.ed and and_echo:
                             yield echo
                             break
 
-            stream_logic = stream_and_fab()
-
         elif self.or_r:
-            stream_logic = chain(stream, self.or_r.imatch(resource, prev_result))
+            stream_logic = chain(stream_num(), self.or_r.imatch(resource, prev_result))
 
         elif self.invert:
-            def stream_invert_fab():
-                for echo in stream:
+            def stream_logic():
+                for echo in stream_num():
                     yield echo.invert()
 
-            stream_logic = stream_invert_fab()
-
         elif self.xor_r:
-            def stream_xor_fab():
-                for echo in stream:
+            def stream_logic():
+                for echo in stream_num():
                     if echo:
                         for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                             if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
@@ -196,22 +194,20 @@ class R:
                         for xor_echo in self.xor_r.imatch(resource, prev_result):
                             if xor_echo:
                                 yield xor_echo
-
-            stream_logic = stream_xor_fab()
+        else:
+            stream_logic = stream_num
 
         # 捕获组
-        stream_name = stream_logic
-
         if self.name:
-            def stream_name_fab():
-                for echo in stream_logic:
+            def stream_name():
+                for echo in stream_logic():
                     echo.capture = echo.clone(
-                        capture={**echo.capture, name: [*echo.capture, (prev_result.ed, echo.ed)]})
-
-            stream_name = stream_name_fab()
+                        capture={**echo.capture, self.name: [*echo.capture, (prev_result.ed, echo.ed)]})
+        else:
+            stream_name = stream_logic
 
         if self.next_r:
-            for echo in stream_name:
+            for echo in stream_name():
                 yield from self.next_r.imatch(resource, echo)
         else:
-            yield from stream_name
+            yield from stream_name()
