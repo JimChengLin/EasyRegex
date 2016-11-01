@@ -221,9 +221,13 @@ class R:
 
         if self.next_r:
             for echo in stream_2:
-                yield from self.next_r.imatch(resource, echo)
+                # print('{} {} In'.format(self, echo))
+                if echo:
+                    yield from self.next_r.imatch(resource, echo)
         else:
-            yield from stream_2
+            a = list(stream_2)
+            # print('{} {} Out'.format(self, a))
+            yield from a
 
     # todo: need further develop
     def match(self, resource: str):
