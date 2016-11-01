@@ -52,7 +52,7 @@ def str_n(num_t: tuple):
         return '{' + str(from_num) + ',' + str(to_num) + '}'
 
 
-def explain_n(result: Result, num_t: tuple):
+def explain_n(result: 'Result', num_t: tuple):
     '''
     如果 num 是由符号和函数定义的, 那么需要在运行时得到确定的 num_t
     '''
@@ -79,7 +79,7 @@ def make_gen(target):
     '''
     if isinstance(target, str):
         # 目标是 str, 则不断拿 send 来的 char 来比对目标中的 char
-        def gen(prev_result: Result):
+        def gen(prev_result: 'Result'):
             curr_result = prev_result.clone()
 
             for expect_char in target:

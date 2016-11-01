@@ -69,7 +69,9 @@ class R:
             s = '%{}%'.format(self.target.__name__)
         else:
             s = str(self.target)
-        s = '({}{})'.format(s, str_n(self.num_t))
+        str_num = str_n(self.num_t)
+        if str_num:
+            s = '({}{})'.format(s, str_num)
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -113,6 +115,7 @@ class R:
 
                 counter = 0
                 fa = self.gen(prev_result)
+                next(fa)
                 for char in resource[prev_result.ed:]:
                     echo = fa.send(char)
 
@@ -125,6 +128,7 @@ class R:
                         if counter < to_num:
                             # 未到达边界, 置换 fa
                             fa = self.gen(echo)
+                            next(fa)
                         else:
                             return
                     elif isinstance(echo, Fail):
@@ -220,3 +224,18 @@ class R:
                 yield from self.next_r.imatch(resource, echo)
         else:
             yield from stream_2
+
+    # todo: need further develop
+    def match(self, resource: str):
+        success = None
+        for echo in self.imatch(resource, Result(0, 7)):
+            if echo:
+                if success:
+                    if echo.ed > success.ed:
+                        success = echo
+                else:
+                    success = echo
+        return success
+
+
+r = R
