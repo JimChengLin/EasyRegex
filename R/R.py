@@ -164,6 +164,7 @@ class R:
                         yield from q
                         q.clear()
                     yield echo
+        # 数量关系处理完毕
         stream_0 = stream_0()
 
         if self.and_r:
@@ -200,17 +201,18 @@ class R:
         else:
             def stream_1():
                 yield from stream_0
+        # 逻辑关系处理完毕
         stream_1 = stream_1()
 
-        # 捕获组
         if self.name:
             def stream_2():
                 for echo in stream_1:
-                    echo.capture = echo.clone(
-                        capture={**echo.capture, self.name: [*echo.capture[self.name], (prev_result.ed, echo.ed)]})
+                    echo.capture = {**echo.capture, self.name: [*echo.capture[self.name], (prev_result.ed, echo.ed)]}
+                    yield echo
         else:
             def stream_2():
                 yield from stream_1
+        # 捕获组处理完毕
         stream_2 = stream_2()
 
         if self.next_r:
