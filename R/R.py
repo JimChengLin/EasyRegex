@@ -164,10 +164,11 @@ class R:
                         yield from q
                         q.clear()
                     yield echo
+        stream_0 = stream_0()
 
         if self.and_r:
             def stream_1():
-                for echo in stream_0():
+                for echo in stream_0:
                     for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                         if and_echo.ed == echo.ed - prev_result.ed and and_echo:
                             yield echo
@@ -175,16 +176,16 @@ class R:
 
         elif self.or_r:
             def stream_1():
-                yield from chain(stream_0(), self.or_r.imatch(resource, prev_result))
+                yield from chain(stream_0, self.or_r.imatch(resource, prev_result))
 
         elif self.invert:
             def stream_1():
-                for echo in stream_0():
+                for echo in stream_0:
                     yield echo.invert()
 
         elif self.xor_r:
             def stream_1():
-                for echo in stream_0():
+                for echo in stream_0:
                     if echo:
                         for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                             if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
@@ -198,20 +199,22 @@ class R:
 
         else:
             def stream_1():
-                yield from stream_0()
+                yield from stream_0
+        stream_1 = stream_1()
 
         # 捕获组
         if self.name:
             def stream_2():
-                for echo in stream_1():
+                for echo in stream_1:
                     echo.capture = echo.clone(
                         capture={**echo.capture, self.name: [*echo.capture[self.name], (prev_result.ed, echo.ed)]})
         else:
             def stream_2():
-                yield from stream_1()
+                yield from stream_1
+        stream_2 = stream_2()
 
         if self.next_r:
-            for echo in stream_2():
+            for echo in stream_2:
                 yield from self.next_r.imatch(resource, echo)
         else:
-            yield from stream_2()
+            yield from stream_2
