@@ -1,1 +1,3 @@
-from .R import R, r
+from .R import R
+
+r = R

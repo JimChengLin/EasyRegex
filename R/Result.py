@@ -1,4 +1,4 @@
-from collections import defaultdict, ChainMap
+from collections import ChainMap
 
 
 class Result:
@@ -11,7 +11,7 @@ class Result:
         self.op = op
         self.ed = ed
         # {..., name: [... (op, ed)]}
-        self.capture = capture if capture is not None else defaultdict(list)
+        self.capture = capture if capture is not None else {}
 
     def __repr__(self):
         return 'Result({}, {}, {})'.format(self.op, self.ed, self.capture)

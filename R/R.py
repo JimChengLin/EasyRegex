@@ -69,9 +69,9 @@ class R:
             s = '%{}%'.format(self.target.__name__)
         else:
             s = str(self.target)
-        str_num = str_n(self.num_t)
-        if str_num:
-            s = '({}{})'.format(s, str_num)
+        num_str = str_n(self.num_t)
+        if num_str:
+            s = '({}{})'.format(s, num_str)
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -211,43 +211,38 @@ class R:
         if self.name:
             def stream_2():
                 for echo in stream_1:
-                    echo.capture = {**echo.capture, self.name: [*echo.capture[self.name], (prev_result.ed, echo.ed)]}
+                    echo.capture = {**echo.capture,
+                                    self.name: [*echo.capture.get(self.name, []), (prev_result.ed, echo.ed)]}
                     yield echo
         else:
             def stream_2():
                 yield from stream_1
-        # 捕获组处理完毕
+        # 捕获完毕
         stream_2 = stream_2()
 
         if self.next_r:
             for echo in stream_2:
-                # print('{} {} In'.format(self, echo))
                 if echo:
                     yield from self.next_r.imatch(resource, echo)
         else:
-            a = list(stream_2)
-            # print('{} {} Out'.format(self, a))
-            yield from a
+            yield from stream_2
 
-    # todo: need further develop
+    # todo: G or L
     def match(self, resource: str):
         result = []
         seed = Result(0, 0)
         while seed.ed < len(resource):
-            longest_this_term = None
+            longest = None
             for echo in self.imatch(resource, seed):
                 if echo:
-                    if longest_this_term:
-                        if echo.ed > longest_this_term.ed:
-                            longest_this_term = echo
+                    if longest:
+                        if echo.ed > longest.ed:
+                            longest = echo
                     else:
-                        longest_this_term = echo
-            if longest_this_term:
-                result.append(longest_this_term)
-                seed = Result(longest_this_term.ed, longest_this_term.ed)
+                        longest = echo
+            if longest:
+                result.append(longest)
+                seed = Result(longest.ed, longest.ed)
             else:
                 seed = Result(seed.ed + 1, seed.ed + 1)
         return result
-
-
-r = R
