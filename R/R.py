@@ -160,7 +160,7 @@ class R:
         # 数量关系处理完毕
         stream_0 = stream_0()
 
-        # todo: logic check
+        # <---
         if self.and_r:
             def stream_1():
                 for echo in stream_0:
@@ -189,6 +189,7 @@ class R:
                     if echo:
                         for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                             if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
+                                yield echo.as_fail()
                                 break
                         else:
                             yield echo
@@ -196,6 +197,7 @@ class R:
                         for xor_echo in self.xor_r.imatch(resource, prev_result):
                             if xor_echo:
                                 yield xor_echo
+        # --->
 
         else:
             def stream_1():
@@ -222,6 +224,7 @@ class R:
             yield from stream_2
 
     def match(self, resource: str):
+        # <---
         output_l = []
         seed = Result(0, 0)
         while seed.ed < len(resource):
@@ -239,4 +242,5 @@ class R:
                 seed = Result(output.ed, output.ed)
             else:
                 seed = Result(seed.ed + 1, seed.ed + 1)
+        # --->
         return output_l
