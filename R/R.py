@@ -150,34 +150,29 @@ class R:
                     curr_iter = (echo for echo in
                                  chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
 
-                q = []
+                def explode(seed, nth: int):
+                    for echo in seed:
+                        yield echo
+                        if echo and nth < to_num:
+                            yield from explode(self.imatch(resource, echo), nth + 1)
 
-                def tunnel(echo):
-                    q.append(echo)
-                    return echo
-
-                while counter < to_num:
-                    counter += 1
-                    curr_iter = (echo for echo in
-                                 chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
-                    if counter != to_num:
-                        curr_iter = map(tunnel, curr_iter)
-
-                for echo in curr_iter:
-                    if q:
-                        yield from q
-                        q.clear()
-                    yield echo
+                yield from explode(curr_iter, counter)
         # 数量关系处理完毕
         stream_0 = stream_0()
 
+        # todo: logic check
         if self.and_r:
             def stream_1():
                 for echo in stream_0:
-                    for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                        if and_echo.ed == echo.ed - prev_result.ed and and_echo:
-                            yield echo
-                            break
+                    if echo:
+                        for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
+                            if and_echo.ed == echo.ed - prev_result.ed and and_echo:
+                                yield echo
+                                break
+                        else:
+                            yield echo.as_fail()
+                    else:
+                        yield echo
 
         elif self.or_r:
             def stream_1():
@@ -212,7 +207,7 @@ class R:
             def stream_2():
                 for echo in stream_1:
                     echo.capture = {**echo.capture,
-                                    self.name: [*echo.capture.get(self.name, []), (prev_result.ed, echo.ed)]}
+                                    self.name: [*echo.capture.get(self.name, ()), (prev_result.ed, echo.ed)]}
                     yield echo
         else:
             def stream_2():
@@ -221,28 +216,27 @@ class R:
         stream_2 = stream_2()
 
         if self.next_r:
-            for echo in stream_2:
-                if echo:
-                    yield from self.next_r.imatch(resource, echo)
+            for echo in filter(bool, stream_2):
+                yield from self.next_r.imatch(resource, echo)
         else:
             yield from stream_2
 
-    # todo: G or L
     def match(self, resource: str):
-        result = []
+        output_l = []
         seed = Result(0, 0)
         while seed.ed < len(resource):
-            longest = None
+            output = None
             for echo in self.imatch(resource, seed):
                 if echo:
-                    if longest:
-                        if echo.ed > longest.ed:
-                            longest = echo
+                    if output:
+                        if (self.mode is Mode.Greedy and echo.ed > output.ed) or \
+                                (self.mode is Mode.Lazy and echo.ed < output.ed):
+                            output = echo
                     else:
-                        longest = echo
-            if longest:
-                result.append(longest)
-                seed = Result(longest.ed, longest.ed)
+                        output = echo
+            if output:
+                output_l.append(output)
+                seed = Result(output.ed, output.ed)
             else:
                 seed = Result(seed.ed + 1, seed.ed + 1)
-        return result
+        return output_l
