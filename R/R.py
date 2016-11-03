@@ -71,7 +71,7 @@ class R:
             s = str(self.target)
         num_str = str_n(self.num_t)
         if num_str:
-            s = '({}{})'.format(s, num_str)
+            s = '({}{}{})'.format(s, num_str, self.mode.value)
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -95,8 +95,8 @@ class R:
     # --- core ---
     def imatch(self, resource: str, prev_result: Result):
         '''
-        接受 2 个参数, 匹配的字符串(resource), 上一个状态机的结果(prev_result)
-        返回 iter, yield 所有合法结果
+        参数: 字符串(resource), 上一个状态机的结果(prev_result)
+        返回 iter, 按匹配模式 yield 所有结果
 
         正则匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
         '''
@@ -135,12 +135,14 @@ class R:
                         yield echo
                         return
 
+            stream_0 = stream_0() if self.mode is Mode.Lazy else reversed(tuple(stream_0()))
         else:
             def stream_0():
-                if from_num == 0:
-                    yield prev_result
-                if to_num == 0:
-                    return
+                if self.mode is Mode.Lazy:
+                    if from_num == 0:
+                        yield prev_result
+                    if to_num == 0:
+                        return
 
                 # DFS
                 counter = 1
@@ -152,21 +154,29 @@ class R:
 
                 def explode(seed, nth: int):
                     for echo in seed:
-                        yield echo
+                        if self.mode is Mode.Lazy:
+                            yield echo
                         if echo and nth < to_num:
                             yield from explode(self.imatch(resource, echo), nth + 1)
+                        if self.mode is Mode.Greedy:
+                            yield echo
 
                 yield from explode(curr_iter, counter)
-        # 数量关系处理完毕
-        stream_0 = stream_0()
+                if self.mode is Mode.Greedy:
+                    if from_num == 0:
+                        yield prev_result
+                    if to_num == 0:
+                        return
 
-        # <---
+            stream_0 = stream_0()
+            # 数量关系处理完毕
+
         if self.and_r:
             def stream_1():
                 for echo in stream_0:
                     if echo:
                         for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                            if and_echo.ed == echo.ed - prev_result.ed and and_echo:
+                            if and_echo and and_echo.ed == echo.ed - prev_result.ed:
                                 yield echo
                                 break
                         else:
@@ -186,18 +196,15 @@ class R:
         elif self.xor_r:
             def stream_1():
                 for echo in stream_0:
-                    if echo:
-                        for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                            if xor_echo.ed == echo.ed - prev_result.ed and xor_echo:
+                    for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
+                        if xor_echo and xor_echo.ed == echo.ed - prev_result.ed:
+                            if echo:
                                 yield echo.as_fail()
-                                break
-                        else:
-                            yield echo
+                            else:
+                                yield echo.as_success()
+                            break
                     else:
-                        for xor_echo in self.xor_r.imatch(resource, prev_result):
-                            if xor_echo:
-                                yield xor_echo
-        # --->
+                        yield echo
 
         else:
             def stream_1():
@@ -214,7 +221,7 @@ class R:
         else:
             def stream_2():
                 yield from stream_1
-        # 捕获完毕
+        # 捕获组完毕
         stream_2 = stream_2()
 
         if self.next_r:
@@ -224,23 +231,6 @@ class R:
             yield from stream_2
 
     def match(self, resource: str):
-        # <---
-        output_l = []
-        seed = Result(0, 0)
-        while seed.ed < len(resource):
-            output = None
-            for echo in self.imatch(resource, seed):
-                if echo:
-                    if output:
-                        if (self.mode is Mode.Greedy and echo.ed > output.ed) or \
-                                (self.mode is Mode.Lazy and echo.ed < output.ed):
-                            output = echo
-                    else:
-                        output = echo
-            if output:
-                output_l.append(output)
-                seed = Result(output.ed, output.ed)
-            else:
-                seed = Result(seed.ed + 1, seed.ed + 1)
-        # --->
-        return output_l
+        for echo in self.imatch(resource, Result(0, 0)):
+            if echo:
+                return echo
