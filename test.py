@@ -15,12 +15,11 @@ def t_abc():
 def t_abcda():
     m = r('abc') @ r('d') @ r('a')
     print(m.match('abcdabdabccc'))
-    print('abcdabdabccc'[5:8])
 
 
 for func in (
-        # t_str,
-        # t_abc,
+        t_str,
+        t_abc,
         t_abcda,
 ):
     func()

@@ -1,6 +1,3 @@
-from collections import ChainMap
-
-
 class Result:
     '''
     记录字符串已匹配的开始和结束, 以及沿途捕获的组
@@ -16,8 +13,8 @@ class Result:
     def __repr__(self):
         return 'Result({}, {}, {})'.format(self.op, self.ed, self.capture)
 
-    def clone(self, **kwargs):
-        return Result(**ChainMap(kwargs, self.__dict__))
+    def clone(self):
+        return Result(**self.__dict__)
 
     # 由于需要对结果取 XOR, NOT, 所以结果有两个状态 Success 和 Fail, 并可以互相转化
     def as_success(self):

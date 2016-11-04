@@ -138,11 +138,10 @@ class R:
             stream_0 = stream_0() if self.mode is Mode.Lazy else reversed(tuple(stream_0()))
         else:
             def stream_0():
-                if self.mode is Mode.Lazy:
-                    if from_num == 0:
-                        yield prev_result
-                    if to_num == 0:
-                        return
+                if to_num == 0:
+                    return prev_result,
+                if self.mode is Mode.Lazy and from_num == 0:
+                    yield prev_result
 
                 # DFS
                 counter = 1
@@ -162,27 +161,25 @@ class R:
                             yield echo
 
                 yield from explode(curr_iter, counter)
-                if self.mode is Mode.Greedy:
-                    if from_num == 0:
-                        yield prev_result
-                    if to_num == 0:
-                        return
+                if self.mode is Mode.Greedy and from_num == 0:
+                    yield prev_result
 
             stream_0 = stream_0()
             # 数量关系处理完毕
 
+        # < ---
         if self.and_r:
             def stream_1():
                 for echo in stream_0:
-                    if echo:
+                    if not echo:
+                        yield echo
+                    else:
                         for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                            if and_echo and and_echo.ed == echo.ed - prev_result.ed:
-                                yield echo
+                            if and_echo:
+                                yield echo if and_echo.ed == echo.ed - prev_result.ed else echo.as_fail()
                                 break
                         else:
                             yield echo.as_fail()
-                    else:
-                        yield echo
 
         elif self.or_r:
             def stream_1():
@@ -205,7 +202,7 @@ class R:
                             break
                     else:
                         yield echo
-
+        # --- >
         else:
             def stream_1():
                 yield from stream_0
