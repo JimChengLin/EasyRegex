@@ -218,13 +218,20 @@ class R:
         stream_2 = stream_2()
 
         if self.next_r:
-            for echo in filter(bool, stream_2):
-                yield from self.next_r.imatch(resource, echo)
+            yield from chain.from_iterable(self.next_r.imatch(resource, echo) for echo in filter(bool, stream_2))
         else:
             yield from stream_2
 
     def match(self, resource: str):
-        for echo in self.imatch(resource, Result(0, 0)):
-            if echo:
-                return echo
-                # --- >
+        output_l = []
+        cursor = Result(0, 0)
+        while cursor.ed < len(resource):
+            for echo in self.imatch(resource, cursor):
+                if echo:
+                    output_l.append(echo)
+                    cursor = Result(echo.ed, echo.ed)
+                    break
+            else:
+                cursor.op += 1
+                cursor.ed += 1
+        return output_l
