@@ -167,19 +167,18 @@ class R:
             stream_0 = stream_0()
             # 数量关系处理完毕
 
-        # < ---
         if self.and_r:
             def stream_1():
                 for echo in stream_0:
                     if not echo:
                         yield echo
                     else:
+                        echo.as_fail()
                         for and_echo in self.and_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                            if and_echo:
-                                yield echo if and_echo.ed == echo.ed - prev_result.ed else echo.as_fail()
+                            if and_echo and and_echo.ed == echo.ed - prev_result.ed:
+                                echo.as_success()
                                 break
-                        else:
-                            yield echo.as_fail()
+                        yield echo
 
         elif self.or_r:
             def stream_1():
@@ -195,14 +194,11 @@ class R:
                 for echo in stream_0:
                     for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                         if xor_echo and xor_echo.ed == echo.ed - prev_result.ed:
-                            if echo:
-                                yield echo.as_fail()
-                            else:
-                                yield echo.as_success()
+                            yield echo.as_fail() if echo else echo.as_success()
                             break
                     else:
                         yield echo
-        # --- >
+
         else:
             def stream_1():
                 yield from stream_0
@@ -231,3 +227,4 @@ class R:
         for echo in self.imatch(resource, Result(0, 0)):
             if echo:
                 return echo
+                # --- >
