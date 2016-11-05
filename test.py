@@ -185,6 +185,25 @@ def t_name():
     # ---
 
 
+def t_div():
+    '''
+    匹配嵌套 DIV
+    '''
+    code = '0<div>1<div>2</div>3</div>4'
+    div_head = r('<div', name=':head')
+    div_tail = r('</div>', name=':tail')
+    no_head_tail = ~(div_head | div_tail)
+
+    def stop_head_tail_equal(capture: dict):
+        head_group = capture.get(':head', ())
+        tail_group = capture.get(':tail', ())
+        return 1 if not head_group or not tail_group or len(head_group) != len(tail_group) else 0
+
+    sentinel = r('\00', stop_head_tail_equal)
+    div = r(div_head | div_tail | no_head_tail, '+') @ sentinel
+    assert str(div.match(code)) == "[Result(0, 27, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]"
+
+
 for func in (
         t_str,
         t_simple,
@@ -195,6 +214,7 @@ for func in (
         t_xor,
         t_exception,
         t_name,
+        t_div,
 ):
     func()
 print('all pass')

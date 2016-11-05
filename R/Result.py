@@ -1,3 +1,6 @@
+from pprint import pformat
+
+
 class Result:
     '''
     记录字符串已匹配的开始和结束, 以及沿途捕获的组
@@ -10,7 +13,7 @@ class Result:
         self.capture = capture if capture is not None else {}
 
     def __repr__(self):
-        return 'Result({}, {}, {})'.format(self.op, self.ed, self.capture)
+        return 'Result({}, {}, {})'.format(self.op, self.ed, pformat(self.capture))
 
     def clone(self):
         return Result(**self.__dict__)
