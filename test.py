@@ -83,6 +83,11 @@ def t_num():
     assert str(m.match('123a123a123')) == '[Result(3, 8, {})]'
     # ---
 
+    # --- 嵌套
+    m = r(r('a'), 5)
+    assert str(m.match('qaaaaaq')) == '[Result(1, 6, {})]'
+    # ---
+
 
 def t_and():
     '''
