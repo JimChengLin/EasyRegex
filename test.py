@@ -56,7 +56,7 @@ def t_simple():
 
 def t_num():
     '''
-    有数量条件的匹配
+    数量条件的匹配
     '''
     for m in (r('b', '{1,2}') @ r('cd'), r('b', '{2}') @ r('cd')):
         assert str(m.match('bbcda')) == '[Result(0, 4, {})]'
@@ -78,7 +78,7 @@ def t_num():
     assert str(m.match('abcccc')) == '[Result(0, 3, {})]'
     # ---
 
-    # --- wildcard
+    # --- 通配符
     m = r('a') @ dot.clone('*') @ r('a')
     assert str(m.match('123a123a123')) == '[Result(3, 8, {})]'
     # ---
@@ -86,7 +86,7 @@ def t_num():
 
 def t_and():
     '''
-    有 and 条件的匹配
+    and 条件的匹配
     '''
     m = (r('abc') & r('abc')) @ r('d')
     assert str(m.match('abcd')) == '[Result(0, 4, {})]'
@@ -98,10 +98,33 @@ def t_and():
     assert str(m.match('1abchhabc1')) == '[Result(1, 9, {})]'
 
 
+def t_or():
+    '''
+    or 条件的匹配
+    '''
+    m = (r('a') | r('b')) @ r('bc')
+    assert str(m.match('abcbbc')) == '[Result(0, 3, {}), Result(3, 6, {})]'
+
+    m = (r('abc') | r('cfg')) @ r('iop') @ r('iop')
+    assert str(m.match('pppcfgiopiop')) == '[Result(3, 12, {})]'
+
+
+def t_not():
+    '''
+    not 条件的匹配
+    '''
+    digit = r(str.isdigit)
+    no_digit = ~digit
+    m = no_digit.clone('+')
+    assert str(m.match('123yyyyy123')) == '[Result(3, 8, {})]'
+
+
 for func in (
         t_str,
         t_simple,
         t_num,
         t_and,
+        t_or,
+        t_not,
 ):
     func()

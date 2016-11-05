@@ -26,9 +26,6 @@ class Result:
 
 
 class Success(Result):
-    def __bool__(self):
-        return True
-
     def invert(self):
         return self.as_fail()
 

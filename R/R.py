@@ -233,7 +233,8 @@ class R:
             for echo in self.imatch(resource, cursor):
                 if echo:
                     output_l.append(echo)
-                    cursor = Result(echo.ed, echo.ed)
+                    op = max(echo.ed, cursor.ed + 1)
+                    cursor = Success(op, op)
                     break
             else:
                 cursor.op += 1
