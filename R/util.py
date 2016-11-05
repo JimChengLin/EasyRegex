@@ -23,7 +23,7 @@ def parse_n(num):
             return 0, inf
         if num == '+':
             return 1, inf
-        if num.startswith('@'):
+        if num.startswith(':'):
             return num, num
 
         if num.startswith('{') and num.endswith('}'):
