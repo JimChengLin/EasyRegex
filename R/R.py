@@ -143,7 +143,9 @@ class R:
         else:
             def stream4num():
                 if to_num == 0:
-                    return prev_result,
+                    # 不能 return prev_result,
+                    yield prev_result
+                    return
                 if self.mode is Mode.lazy and from_num == 0:
                     yield prev_result
 

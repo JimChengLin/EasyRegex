@@ -84,8 +84,17 @@ def t_num():
     # ---
 
     # --- 嵌套
+    for m in (r(r('b'), '*') @ r('cd'), r(r('b'), '*', mode=Mode.lazy) @ r('cd')):
+        assert str(m.match('cd')) == '[Result(0, 2, {})]'
+
     m = r(r('a'), 5)
     assert str(m.match('qaaaaaq')) == '[Result(1, 6, {})]'
+
+    m = r(r('a'), 0) @ r('q')
+    assert str(m.match('qaaaaaq')) == '[Result(0, 1, {}), Result(6, 7, {})]'
+
+    m = r('q') @ r(r('a'), '+', mode=Mode.lazy)
+    assert str(m.match('qaaaaaa')) == '[Result(0, 2, {})]'
     # ---
 
 
@@ -96,6 +105,9 @@ def t_and():
     m = (r('abc') & r('abc')) @ r('d')
     assert str(m.match('abcd')) == '[Result(0, 4, {})]'
     assert str((m @ m).match('abcd' * 2)) == '[Result(0, 8, {})]'
+
+    m = (r('a') & r('b')) @ r('d')
+    assert str(m.match('ad')) == '[]'
 
     startswith_abc = r('abc') @ dot.clone('*')
     endswith_abc = dot.clone('*') @ r('abc')
@@ -141,6 +153,19 @@ def t_xor():
     assert str(m.match('abc')) == '[]'
 
 
+def t_exception():
+    '''
+    异常是否正常触发
+    '''
+    for func in (lambda: r(1), lambda: r('foo', '1')):
+        try:
+            func()
+        except TypeError:
+            pass
+        else:
+            assert False
+
+
 for func in (
         t_str,
         t_simple,
@@ -149,6 +174,7 @@ for func in (
         t_or,
         t_not,
         t_xor,
+        t_exception,
 ):
     func()
 print('all pass')
