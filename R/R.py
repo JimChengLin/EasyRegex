@@ -223,22 +223,10 @@ class R:
         # 逻辑关系处理完毕
         stream4logic = stream4logic()
 
-        if self.name:
-            def stream4name():
-                for echo in stream4logic:
-                    # echo.capture = {**echo.capture,
-                    #                 self.name: [*echo.capture.get(self.name, ()), (prev_result.ed, echo.ed)]}
-                    yield echo
-        else:
-            def stream4name():
-                yield from stream4logic
-        # 捕获组完毕
-        stream4name = stream4name()
-
         if self.next_r:
-            yield from chain.from_iterable(self.next_r.imatch(resource, echo) for echo in filter(bool, stream4name))
+            yield from chain.from_iterable(self.next_r.imatch(resource, echo) for echo in filter(bool, stream4logic))
         else:
-            yield from stream4name
+            yield from stream4logic
 
     def match(self, resource: str):
         output_l = []
