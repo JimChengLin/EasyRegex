@@ -93,7 +93,7 @@ def make_gen(target):
 
     elif isinstance(target, Callable):
         # 目标是函数, 传入 recv_char, 根据真假返回结果
-        def gen(prev_result: Result):
+        def gen(prev_result: 'Result'):
             curr_result = prev_result.clone()
             recv_char = yield 'GO'
             curr_result.ed += 1

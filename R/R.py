@@ -55,7 +55,7 @@ class R:
 
     def __xor__(self, other: 'R'):
         this = self.clone()
-        this.or_r = other
+        this.xor_r = other
         return R(this)
 
     # @ 在 Python 中表示矩阵乘法, 非常近似于 next
