@@ -71,7 +71,7 @@ class R:
             s = str(self.target)
         num_str = str_n(self.num_t)
         if num_str:
-            s = '({}{}{})'.format(s, num_str, self.mode.value)
+            s = '({}{}{})'.format(s, num_str, '?' if self.mode is Mode.Lazy else '')
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -88,8 +88,13 @@ class R:
 
     def clone(self, **kwargs):
         this = copy(self)
-        for k, v in kwargs.items():
-            setattr(this, k, v)
+        for attr, val in kwargs.items():
+            if attr == 'num':
+                attr = 'num_t'
+                val = parse_n(val)
+            elif attr == 'target':
+                setattr(this, 'gen', make_gen(val) if not isinstance(val, R) else None)
+            setattr(this, attr, val)
         return this
 
     # --- core ---

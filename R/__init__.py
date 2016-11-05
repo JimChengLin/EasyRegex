@@ -1,3 +1,3 @@
-from .R import R
+from .R import R, Mode
 
 r = R
