@@ -9,11 +9,11 @@ from .util import parse_n, make_gen, str_n, explain_n
 
 class Mode(Enum):
     '''
-    贪心匹配 Mode.Greedy
-    懒惰匹配 Mode.Lazy
+    贪心匹配 Mode.greedy
+    懒惰匹配 Mode.lazy
     '''
-    Greedy = 'G'
-    Lazy = 'L'
+    greedy = 'G'
+    lazy = 'L'
 
 
 class R:
@@ -22,7 +22,7 @@ class R:
     '''
 
     # --- basic ---
-    def __init__(self, target, num=None, name: str = None, mode=Mode.Greedy):
+    def __init__(self, target, num=None, name: str = None, mode=Mode.greedy):
         self.target = target
         self.num_t = parse_n(num)
         self.name = name
@@ -71,7 +71,7 @@ class R:
             s = str(self.target)
         num_str = str_n(self.num_t)
         if num_str:
-            s = '({}{}{})'.format(s, num_str, '?' if self.mode is Mode.Lazy else '')
+            s = '({}{}{})'.format(s, num_str, '?' if self.mode is Mode.lazy else '')
 
         if self.and_r:
             s = '({}&{})'.format(s, self.and_r)
@@ -139,12 +139,12 @@ class R:
                         yield echo
                         return
 
-            stream4num = stream4num() if self.mode is Mode.Lazy else reversed(tuple(stream4num()))
+            stream4num = stream4num() if self.mode is Mode.lazy else reversed(tuple(stream4num()))
         else:
             def stream4num():
                 if to_num == 0:
                     return prev_result,
-                if self.mode is Mode.Lazy and from_num == 0:
+                if self.mode is Mode.lazy and from_num == 0:
                     yield prev_result
 
                 # DFS
@@ -157,15 +157,15 @@ class R:
 
                 def explode(seed, nth: int):
                     for echo in seed:
-                        if self.mode is Mode.Lazy:
+                        if self.mode is Mode.lazy:
                             yield echo
                         if echo and nth < to_num:
                             yield from explode(self.imatch(resource, echo), nth + 1)
-                        if self.mode is Mode.Greedy:
+                        if self.mode is Mode.greedy:
                             yield echo
 
                 yield from explode(curr_iter, counter)
-                if self.mode is Mode.Greedy and from_num == 0:
+                if self.mode is Mode.greedy and from_num == 0:
                     yield prev_result
 
             stream4num = stream4num()
