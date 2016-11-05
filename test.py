@@ -119,6 +119,23 @@ def t_not():
     assert str(m.match('123yyyyy123')) == '[Result(3, 8, {})]'
 
 
+def t_xor():
+    '''
+    xor 条件的匹配
+    '''
+    m = (r('a') ^ r('b')) @ r('c')
+    assert str(m.match('ac')) == '[Result(0, 2, {})]'
+    assert str(m.match('bc')) == '[Result(0, 2, {})]'
+    assert str(m.match('cc')) == '[]'
+
+    m = (r('a') ^ r('ab')) @ r('c')
+    assert str(m.match('ac')) == '[Result(0, 2, {})]'
+    assert str(m.match('abc')) == '[]'
+
+    m = (r('ab') ^ r('ab')) @ r('c')
+    assert str(m.match('abc')) == '[]'
+
+
 for func in (
         t_str,
         t_simple,
@@ -126,5 +143,7 @@ for func in (
         t_and,
         t_or,
         t_not,
+        t_xor,
 ):
     func()
+print('all pass')
