@@ -1,7 +1,6 @@
 class Result:
     '''
     记录字符串已匹配的开始和结束, 以及沿途捕获的组
-    使用时保持只读, 从而在状态机之间安全传递
     '''
 
     def __init__(self, op: int, ed: int, capture: dict = None):
@@ -16,7 +15,7 @@ class Result:
     def clone(self):
         return Result(**self.__dict__)
 
-    # 由于需要对结果取 XOR, NOT, 所以结果有两个状态 Success 和 Fail, 并可以互相转化
+    # 由于需要对结果取 XOR, NOT, 所以有两个状态 Success 和 Fail, 并可以互相转化
     def as_success(self):
         self.__class__ = Success
         return self

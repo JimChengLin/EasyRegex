@@ -44,7 +44,7 @@ def str_n(num_t: tuple):
         from_num, to_num = tpl(from_num.__name__), tpl(to_num.__name__)
 
     if from_num == to_num:
-        # {1, 1}无需显示
+        # {1,1}无需显示
         if from_num == 1:
             return ''
         return '{' + str(from_num) + '}'
@@ -92,7 +92,7 @@ def make_gen(target):
             yield curr_result.as_success()
 
     elif isinstance(target, Callable):
-        # 目标是函数, 以 recv_char 执行一次, 根据真假返回结果
+        # 目标是函数, 传入 recv_char, 根据真假返回结果
         def gen(prev_result: Result):
             curr_result = prev_result.clone()
             recv_char = yield 'GO'

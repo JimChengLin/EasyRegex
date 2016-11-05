@@ -96,7 +96,7 @@ class R:
     def imatch(self, resource: str, prev_result: Result):
         '''
         参数: 字符串(resource), 上一个状态机的结果(prev_result)
-        返回 iter, 按匹配模式 yield 所有结果
+        返回 iter, 按模式 yield 所有结果
 
         正则匹配可以看成图论, imatch 就像节点用 stream 或者说 pipe 连接
         '''
@@ -105,7 +105,7 @@ class R:
 
         if self.gen:
             # 已递归到最里层
-            def stream_0():
+            def stream4num():
                 if from_num == 0:
                     # 可选匹配
                     yield prev_result
@@ -135,9 +135,9 @@ class R:
                         yield echo
                         return
 
-            stream_0 = stream_0() if self.mode is Mode.Lazy else reversed(tuple(stream_0()))
+            stream4num = stream4num() if self.mode is Mode.Lazy else reversed(tuple(stream4num()))
         else:
-            def stream_0():
+            def stream4num():
                 if to_num == 0:
                     return prev_result,
                 if self.mode is Mode.Lazy and from_num == 0:
@@ -164,12 +164,12 @@ class R:
                 if self.mode is Mode.Greedy and from_num == 0:
                     yield prev_result
 
-            stream_0 = stream_0()
+            stream4num = stream4num()
             # 数量关系处理完毕
 
         if self.and_r:
-            def stream_1():
-                for echo in stream_0:
+            def stream4logic():
+                for echo in stream4num:
                     if not echo:
                         yield echo
                     else:
@@ -181,17 +181,17 @@ class R:
                         yield echo
 
         elif self.or_r:
-            def stream_1():
-                yield from chain(stream_0, self.or_r.imatch(resource, prev_result))
+            def stream4logic():
+                yield from chain(stream4num, self.or_r.imatch(resource, prev_result))
 
         elif self.invert:
-            def stream_1():
-                for echo in stream_0:
+            def stream4logic():
+                for echo in stream4num:
                     yield echo.invert()
 
         elif self.xor_r:
-            def stream_1():
-                for echo in stream_0:
+            def stream4logic():
+                for echo in stream4num:
                     for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
                         if xor_echo and xor_echo.ed == echo.ed - prev_result.ed:
                             yield echo.as_fail() if echo else echo.as_success()
@@ -200,27 +200,27 @@ class R:
                         yield echo
 
         else:
-            def stream_1():
-                yield from stream_0
+            def stream4logic():
+                yield from stream4num
         # 逻辑关系处理完毕
-        stream_1 = stream_1()
+        stream4logic = stream4logic()
 
         if self.name:
-            def stream_2():
-                for echo in stream_1:
+            def stream4name():
+                for echo in stream4logic:
                     echo.capture = {**echo.capture,
                                     self.name: [*echo.capture.get(self.name, ()), (prev_result.ed, echo.ed)]}
                     yield echo
         else:
-            def stream_2():
-                yield from stream_1
+            def stream4name():
+                yield from stream4logic
         # 捕获组完毕
-        stream_2 = stream_2()
+        stream4name = stream4name()
 
         if self.next_r:
-            yield from chain.from_iterable(self.next_r.imatch(resource, echo) for echo in filter(bool, stream_2))
+            yield from chain.from_iterable(self.next_r.imatch(resource, echo) for echo in filter(bool, stream4name))
         else:
-            yield from stream_2
+            yield from stream4name
 
     def match(self, resource: str):
         output_l = []
