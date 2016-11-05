@@ -157,13 +157,32 @@ def t_exception():
     '''
     异常是否正常触发
     '''
+    counter = 0
     for func in (lambda: r(1), lambda: r('foo', '1')):
         try:
             func()
         except TypeError:
-            pass
-        else:
-            assert False
+            counter += 1
+    assert counter == 2
+
+
+def t_name():
+    '''
+    带捕获组的匹配
+    '''
+    m = r('b', '{1,2}', ':b') @ r('cd')
+    assert str(m.match('bbcda')) == "[Result(0, 4, {':b': [(0, 1), (1, 2)]})]"
+
+    # --- 捕获组影响数量条件
+    for m in (r(r('b', 1, ':b'), 2) @ r('cd', ':b'), r('b', '+', ':b') @ r('cd', ':b'),
+              r('b', '+', ':a').clone(name=':b') @ r('cd', ':b')):
+        assert str(m.match('bbcdcd')) == "[Result(0, 6, {':b': [(0, 1), (1, 2)]})]"
+
+    # ------ 函数数量条件
+    m = r('a', name=':a') @ r('b', lambda capture: len(capture.get(':a', ())) + 1)
+    assert str(m.match('aabbbbb')) == "[Result(1, 4, {':a': [(1, 2)]})]"
+    # ------
+    # ---
 
 
 for func in (
@@ -175,6 +194,7 @@ for func in (
         t_not,
         t_xor,
         t_exception,
+        t_name,
 ):
     func()
 print('all pass')

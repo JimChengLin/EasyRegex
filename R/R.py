@@ -107,6 +107,16 @@ class R:
         # 约定: from_num 和 to_num 在匹配开始时就已经确定
         from_num, to_num = explain_n(prev_result, self.num_t)
 
+        def capture_add(echo: Result):
+            '''
+            在 capture 添加 echo, 用于捕获组
+            '''
+            if self.name and echo:
+                group = echo.capture.get(self.name, ())
+                prev_ed = group[-1][-1] if group else prev_result.ed
+                echo.capture = {**echo.capture, self.name: [*group, (prev_ed, echo.ed)]}
+            return echo
+
         if self.gen:
             # 已递归到最里层
             def stream4num():
@@ -127,6 +137,7 @@ class R:
                         continue
                     elif isinstance(echo, Success):
                         counter += 1
+                        capture_add(echo)
                         if from_num <= counter <= to_num:
                             yield echo
                         if counter < to_num:
@@ -151,14 +162,15 @@ class R:
 
                 # DFS
                 counter = 1
-                curr_iter = (echo for echo in self.target.imatch(resource, prev_result))
+                curr_iter = (capture_add(echo) for echo in self.target.imatch(resource, prev_result))
                 while counter < from_num:
                     counter += 1
-                    curr_iter = (echo for echo in
+                    curr_iter = (capture_add(echo) for echo in
                                  chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
 
                 def explode(seed, nth: int):
                     for echo in seed:
+                        capture_add(echo)
                         if self.mode is Mode.lazy:
                             yield echo
                         if echo and nth < to_num:
@@ -214,8 +226,8 @@ class R:
         if self.name:
             def stream4name():
                 for echo in stream4logic:
-                    echo.capture = {**echo.capture,
-                                    self.name: [*echo.capture.get(self.name, ()), (prev_result.ed, echo.ed)]}
+                    # echo.capture = {**echo.capture,
+                    #                 self.name: [*echo.capture.get(self.name, ()), (prev_result.ed, echo.ed)]}
                     yield echo
         else:
             def stream4name():
@@ -236,7 +248,7 @@ class R:
                 if echo:
                     output_l.append(echo)
                     op = max(echo.ed, cursor.ed + 1)
-                    cursor = Success(op, op)
+                    cursor = Result(op, op)
                     break
             else:
                 cursor.op += 1
