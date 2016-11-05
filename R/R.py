@@ -86,15 +86,14 @@ class R:
             s += str(self.next_r)
         return s
 
-    def clone(self, **kwargs):
+    def clone(self, num=None, name: str = None, mode: Mode = None):
         this = copy(self)
-        for attr, val in kwargs.items():
-            if attr == 'num':
-                attr = 'num_t'
-                val = parse_n(val)
-            elif attr == 'target':
-                setattr(this, 'gen', make_gen(val) if not isinstance(val, R) else None)
-            setattr(this, attr, val)
+        if num is not None:
+            this.num_t = parse_n(num)
+        if name:
+            this.name = name
+        if mode:
+            this.mode = mode
         return this
 
     # --- core ---
