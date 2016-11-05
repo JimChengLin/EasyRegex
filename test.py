@@ -202,6 +202,8 @@ def t_div():
     sentinel = r('\00', stop_head_tail_equal)
     div = r(div_head | div_tail | no_head_tail, '+') @ sentinel
     assert str(div.match(code)) == "[Result(0, 27, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]"
+    div = div_head @ r(div_head | div_tail | dot, '+') @ div_tail @ sentinel
+    assert str(div.match(code)) == "[Result(1, 26, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]"
 
 
 for func in (
