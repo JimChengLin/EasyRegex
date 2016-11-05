@@ -1,5 +1,8 @@
 from R import r, Mode
 
+# 通配符
+dot = r(lambda char: True)
+
 
 def t_str():
     '''
@@ -75,10 +78,30 @@ def t_num():
     assert str(m.match('abcccc')) == '[Result(0, 3, {})]'
     # ---
 
+    # --- wildcard
+    m = r('a') @ dot.clone('*') @ r('a')
+    assert str(m.match('123a123a123')) == '[Result(3, 8, {})]'
+    # ---
+
+
+def t_and():
+    '''
+    有 and 条件的匹配
+    '''
+    m = (r('abc') & r('abc')) @ r('d')
+    assert str(m.match('abcd')) == '[Result(0, 4, {})]'
+    assert str((m @ m).match('abcd' * 2)) == '[Result(0, 8, {})]'
+
+    startswith_abc = r('abc') @ dot.clone('*')
+    endswith_abc = dot.clone('*') @ r('abc')
+    m = startswith_abc & endswith_abc
+    assert str(m.match('1abchhabc1')) == '[Result(1, 9, {})]'
+
 
 for func in (
         t_str,
         t_simple,
         t_num,
+        t_and,
 ):
     func()
