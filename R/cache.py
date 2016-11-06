@@ -27,15 +27,12 @@ def cache_clear():
 
 def cache_deco(imatch):
     def memo_imatch(self: 'R', resource: str, prev_result: 'Result'):
-        def tpl(res: 'Result'):
-            return id(self), resource, str(res)
+        def tpl(val: 'Result'):
+            return id(self), id(resource), str(val)
 
         k = tpl(prev_result)
-        offset, share_l, share_iter = cache.get(k, (0, [], imatch(self, resource, prev_result)))
-
-        if offset <= len(share_l) - 1:
-            yield from share_l
-            print('hit', len(share_l))
+        share_l, share_iter = cache.setdefault(k, ([], imatch(self, resource, prev_result)))
+        yield from share_l
 
         while True:
             echo = next(share_iter)
