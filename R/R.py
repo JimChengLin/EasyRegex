@@ -176,7 +176,7 @@ class R:
                         if self.mode is Mode.lazy:
                             yield echo
                         if echo and nth < to_num:
-                            yield from explode(self.imatch(resource, echo), nth + 1)
+                            yield from explode(self.target.imatch(resource, echo), nth + 1)
                         if self.mode is Mode.greedy:
                             yield echo
 

@@ -39,8 +39,11 @@ def cache_deco(imatch):
     return memo_imatch
 
 
-# 二级缓存
 def add_sec_cache(r: 'R', resource: str, prev_result: 'Result', curr_result: 'Result'):
+    '''
+    二级缓存有更多的入口点, 复用一级缓存
+    '''
+
     def tpl(res: 'Result'):
         return id(r), id(resource), str(res)
 
