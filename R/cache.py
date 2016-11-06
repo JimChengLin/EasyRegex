@@ -34,17 +34,16 @@ def cache_deco(imatch):
         offset, share_l, share_iter = cache.get(k, (0, [], imatch(self, resource, prev_result)))
 
         if offset <= len(share_l) - 1:
-            for i in share_l[offset:]:
-                offset += 1
-                yield i
+            yield from share_l[offset:]
 
         while True:
             try:
                 echo = next(share_iter)
                 share_l.append(echo)
-                k = tpl(echo)
-                offset += 1
-                cache[k] = (offset, share_l, share_iter)
+
+                if len(share_l) > 1:
+                    k = tpl(echo)
+                    cache[k] = (len(share_l) - 1, share_l, share_iter)
                 yield echo
             except StopIteration:
                 break
