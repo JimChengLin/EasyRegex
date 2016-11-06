@@ -4,8 +4,8 @@ from itertools import chain
 from typing import Callable
 
 from .Result import Result, Success, Fail
+from .cache import cache_deco, cache_clear
 from .util import parse_n, make_gen, str_n, explain_n
-from .cache import cache_deco,cache_clear
 
 
 class Mode(Enum):
