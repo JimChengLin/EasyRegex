@@ -4,6 +4,7 @@ from itertools import chain
 from typing import Callable
 
 from .Result import Result, Success, Fail
+from .cache import cache_deco, cache_clear
 from .util import parse_n, make_gen, str_n, explain_n
 
 
@@ -97,6 +98,7 @@ class R:
         return this
 
     # --- core ---
+    @cache_deco
     def imatch(self, resource: str, prev_result: Result):
         '''
         参数: 字符串(resource), 上一个状态机的结果(prev_result)
@@ -241,4 +243,5 @@ class R:
             else:
                 cursor.op += 1
                 cursor.ed += 1
+        cache_clear()
         return output_l
