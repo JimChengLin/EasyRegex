@@ -1,3 +1,4 @@
+from copy import copy
 from pprint import pformat
 
 
@@ -15,8 +16,11 @@ class Result:
     def __repr__(self):
         return 'Result({}, {}, {})'.format(self.op, self.ed, pformat(self.capture))
 
-    def clone(self):
-        return Result(**self.__dict__)
+    def clone(self, **kwargs):
+        this = copy(self)
+        for k, v in kwargs:
+            setattr(this, k, v)
+        return this
 
     # 由于需要对结果取 XOR, NOT, 所以有两个状态 Success 和 Fail, 并可以互相转化
     def as_success(self):
