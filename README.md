@@ -3,12 +3,9 @@
 
 ## 使用方法
 拷贝 R 文件夹到程序的 root
+依赖: Python 3.5+
 
 ```Python
-# 依赖: Python 3.5+
-# 将 R 文件夹拷贝到 project 的 root 下
-# 从现在开始, 忘记正则表达式
-
 from R import r
 
 # 匹配'abc'
@@ -132,3 +129,6 @@ m.match('0<div>1<div>2</div>3</div>4')
 # >> (19, 26)]})]
 # '0<div>1<div>2</div>3</div>4'[1:26] == '<div>1<div>2</div>3</div>'
 ```
+
+## 发布协议
+MIT
