@@ -17,7 +17,7 @@ def cache_deco(imatch):
     '''
 
     def memo_imatch(self: 'R', resource: str, prev_result: 'Result'):
-        k = (id(self), id(resource), '{}{}'.format(prev_result.ed, sorted(prev_result.capture.items())))
+        k = (id(self), id(resource), prev_result.ed, prev_result.hash)
         share_l, share_iter = cache.setdefault(k, ([], imatch(self, resource, prev_result)))
         yield from map(lambda echo: echo.clone(op=prev_result.ed), share_l)
 

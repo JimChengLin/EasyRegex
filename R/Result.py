@@ -11,10 +11,29 @@ class Result:
         self.op = op
         self.ed = ed
         # {..., name: [... (op, ed)]}
-        self.capture = capture if capture is not None else {}
+        self._capture = capture if capture is not None else {}
+
+        self._hash = 0
+        self.update = True
 
     def __repr__(self):
         return 'Result({}, {}, {})'.format(self.op, self.ed, pformat(self.capture))
+
+    @property
+    def capture(self):
+        return self._capture
+
+    @capture.setter
+    def capture(self, val: dict):
+        self.update = True
+        self._capture = val
+
+    @property
+    def hash(self):
+        if self.update:
+            self.update = False
+            self._hash = hash(str(sorted(self.capture.items())))
+        return self._hash
 
     def clone(self, **kwargs):
         this = copy(self)

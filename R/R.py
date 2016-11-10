@@ -1,3 +1,4 @@
+from collections import deque
 from copy import copy
 from enum import Enum
 from itertools import chain
@@ -170,17 +171,28 @@ class R:
                     curr_iter = (capture_add(echo) for echo in
                                  chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
 
-                def explode(seed, nth: int):
-                    for echo in seed:
-                        capture_add(echo)
+                q = deque()
+                q.append((curr_iter, counter))
+                while q:
+                    last = q[-1]
+                    curr_iter, nth = last[:2]
+                    try:
+                        echo = capture_add(next(curr_iter))
+
                         if self.mode is Mode.lazy:
                             yield echo
-                        if echo and nth < to_num:
-                            yield from explode(self.target.imatch(resource, echo), nth + 1)
-                        if self.mode is Mode.greedy:
-                            yield echo
+                            if echo and nth < to_num:
+                                q.append((self.target.imatch(resource, echo), nth + 1))
+                        else:
+                            if echo and nth < to_num:
+                                q.append((self.target.imatch(resource, echo), nth + 1, echo))
+                            else:
+                                yield echo
+                    except StopIteration:
+                        q.pop()
+                        if len(last) == 3:
+                            yield last[-1]
 
-                yield from explode(curr_iter, counter)
                 if self.mode is Mode.greedy and from_num == 0:
                     yield prev_result
 
