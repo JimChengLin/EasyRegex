@@ -102,7 +102,6 @@ m = r('a', name=':a') @ r('b',
     lambda capture: len(capture.get(':a',())) + 1)
 # 含义: 匹配1个'a'并存入捕获组, 接下来'b'的个数是名为':a'的捕获组的长度加一
 
-# 为了省略篇幅, 大家可以看下各个方法的签名, 我注释写得很认真
 # 更多更详细的例子, 参见 git 中的 test.py 文件
 ```
 
@@ -118,17 +117,14 @@ no_head_tail = ~(div_head | div_tail)
 def stop_head_tail_equal(capture: dict):
     head_group = capture.get(':head', ())
     tail_group = capture.get(':tail', ())
-    return 1 if not head_group or not tail_group or \
-        len(head_group) != len(tail_group) else 0
+    return 1 if not head_group or not tail_group or len(head_group) != len(tail_group) else 0
 
-# '\00'是一个不可能存在的字符, 这里拿来当开关用
-sentinel = r('\00', stop_head_tail_equal)
+# '\0'是一个不可能存在的字符, 这里拿来当开关用
+sentinel = r('\0', stop_head_tail_equal)
 
-div = div_head @ r(div_head | div_tail | no_head_tail, '+') @ div_tail
-    @ sentinel
+div = div_head @ r(div_head | div_tail | no_head_tail, '+') @ div_tail @ sentinel
 # 含义: 不断匹配 DIV 头标签和尾标签, 直到二者数量相同
 m.match('0<div>1<div>2</div>3</div>4')
-# >> [Result(1, 26, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), 
-# >> (19, 26)]})]
+# >> [Result(1, 26, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]
 # '0<div>1<div>2</div>3</div>4'[1:26] == '<div>1<div>2</div>3</div>'
 ```
