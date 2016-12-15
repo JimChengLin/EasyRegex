@@ -146,7 +146,7 @@ def t_xor():
     assert str(m.match('cc')) == '[]'
 
     m = (r('a') ^ r('ab')) @ r('c')
-    assert str(m.match('ac')) == '[Result(0, 2, {})]'
+    assert str(m.match('ac')) == '[]'
     assert str(m.match('abc')) == '[]'
 
     m = (r('ab') ^ r('ab')) @ r('c')

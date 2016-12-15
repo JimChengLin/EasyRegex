@@ -224,9 +224,12 @@ class R:
         elif self.xor_r:
             def stream4logic():
                 for echo in stream4num:
+                    demand_bool = not bool(echo)
+                    echo.as_fail()
+
                     for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                        if xor_echo and xor_echo.ed == echo.ed - prev_result.ed:
-                            yield echo.as_fail() if echo else echo.as_success()
+                        if bool(xor_echo) is demand_bool:
+                            yield echo.as_success()
                             break
                     else:
                         yield echo
