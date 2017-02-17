@@ -32,7 +32,7 @@ class Result:
     def hash(self):
         if self.update:
             self.update = False
-            self._hash = hash(str(sorted(self.capture.items())))
+            self._hash = str(sorted(self.capture.items()))
         return self._hash
 
     def clone(self, **kwargs):

@@ -228,7 +228,7 @@ class R:
                     echo.as_fail()
 
                     for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                        if bool(xor_echo) is demand_bool:
+                        if bool(xor_echo) is demand_bool and xor_echo.ed == echo.ed - prev_result.ed:
                             yield echo.as_success()
                             break
                     else:
