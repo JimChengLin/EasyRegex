@@ -9,6 +9,11 @@ from .cache import cache_deco, cache_clear
 from .util import parse_n, make_gen, str_n, explain_n
 
 
+class RecursiveWrapper:
+    def __init__(self):
+        self.val = None
+
+
 class Mode(Enum):
     '''
     贪心匹配 Mode.greedy
@@ -25,7 +30,7 @@ class R:
 
     # --- basic ---
     def __init__(self, target, num=None, name: str = None, mode=Mode.greedy):
-        self.target = target
+        self._target = target
         self.num_t = parse_n(num)
         self.name = name
         self.mode = mode
@@ -38,7 +43,18 @@ class R:
         self.next_r = None
 
         # 状态机
-        self.gen = make_gen(target) if not isinstance(target, R) else None
+        self.gen = make_gen(self.target) if not isinstance(self.target, (R, RecursiveWrapper)) else None
+
+    @property
+    def target(self):
+        if isinstance(self._target, RecursiveWrapper):
+            return self._target.val if self._target.val is not None else self._target
+        else:
+            return self._target
+
+    @target.setter
+    def target(self, val):
+        self._target = val
 
     def __and__(self, other: 'R'):
         this = self.clone()
@@ -110,14 +126,17 @@ class R:
         # 约定: from_num 和 to_num 在匹配开始时就已经确定
         from_num, to_num = explain_n(prev_result, self.num_t)
 
+        prev_ed = prev_result.ed
+
         def capture_add(echo: Result):
             '''
             在 capture 添加 echo, 用于捕获组
             '''
+            nonlocal prev_ed
             if self.name and echo:
                 group = echo.capture.get(self.name, ())
-                prev_ed = group[-1][-1] if group else prev_result.ed
                 echo.capture = {**echo.capture, self.name: [*group, (prev_ed, echo.ed)]}
+                prev_ed = echo.ed
             return echo
 
         if self.gen:
