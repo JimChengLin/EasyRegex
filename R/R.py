@@ -85,6 +85,8 @@ class R:
     def __repr__(self):
         if self.gen and isinstance(self.target, Callable):
             s = '%{}%'.format(self.target.__name__)
+        elif isinstance(self._target, RecursiveWrapper):
+            return '<RW>'
         else:
             s = str(self.target)
         num_str = str_n(self.num_t)
@@ -184,11 +186,10 @@ class R:
 
                 # DFS
                 counter = 1
-                curr_iter = (capture_add(echo) for echo in self.target.imatch(resource, prev_result))
+                curr_iter = self.target.imatch(resource, prev_result)
                 while counter < from_num:
                     counter += 1
-                    curr_iter = (capture_add(echo) for echo in
-                                 chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
+                    curr_iter = chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i)
 
                 q = deque()
                 q.append((curr_iter, counter))
