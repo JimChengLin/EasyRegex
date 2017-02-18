@@ -17,9 +17,13 @@ def cache_deco(imatch):
     '''
 
     def memo_imatch(self: 'R', resource: str, prev_result: 'Result'):
-        k = (id(self), id(resource), prev_result.ed, prev_result.hash)
+        def recursion_correct(result: 'Result'):
+            result.op = max(result.op, prev_result.op)
+            return result
+
+        k = (id(self), prev_result.ed, prev_result.hash)
         share_l, share_iter = cache.setdefault(k, ([], imatch(self, resource, prev_result)))
-        yield from map(lambda echo: echo.clone(op=prev_result.ed), share_l)
+        yield from map(lambda echo: recursion_correct(echo.clone(op=prev_result.ed)), share_l)
 
         while True:
             try:
@@ -27,6 +31,6 @@ def cache_deco(imatch):
             except StopIteration:
                 break
             share_l.append(echo)
-            yield echo
+            yield recursion_correct(echo)
 
     return memo_imatch
