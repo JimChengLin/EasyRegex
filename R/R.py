@@ -9,7 +9,7 @@ from .cache import cache_deco, cache_clear
 from .util import parse_n, make_gen, str_n, explain_n
 
 
-class RecursiveWrapper:
+class RecursionWrapper:
     def __init__(self):
         self.val = None
 
@@ -43,11 +43,11 @@ class R:
         self.next_r = None
 
         # 状态机
-        self.gen = make_gen(self.target) if not isinstance(self.target, (R, RecursiveWrapper)) else None
+        self.gen = make_gen(self.target) if not isinstance(self.target, (R, RecursionWrapper)) else None
 
     @property
     def target(self):
-        if isinstance(self._target, RecursiveWrapper):
+        if isinstance(self._target, RecursionWrapper):
             return self._target.val if self._target.val is not None else self._target
         else:
             return self._target
@@ -85,7 +85,7 @@ class R:
     def __repr__(self):
         if self.gen and isinstance(self.target, Callable):
             s = '%{}%'.format(self.target.__name__)
-        elif isinstance(self._target, RecursiveWrapper):
+        elif isinstance(self._target, RecursionWrapper):
             return '<RW>'
         else:
             s = str(self.target)

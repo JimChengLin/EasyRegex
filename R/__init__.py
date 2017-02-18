@@ -1,4 +1,4 @@
-from .R import R, Mode, RecursiveWrapper
+from .R import R, Mode, RecursionWrapper
 
 r = R
-rw = RecursiveWrapper
+rw = RecursionWrapper
