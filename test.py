@@ -1,4 +1,4 @@
-from R import r, Mode
+from R import r, Mode, RecursionWrapper
 
 # 通配符
 dot = r(lambda char: True)
@@ -202,10 +202,17 @@ def t_div():
     sentinel = r('\00', stop_head_tail_equal)
 
     div = r(div_head | div_tail | no_head_tail, '+') @ sentinel
-    assert str(div.match(code)) == "[Result(0, 27, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]"
+    assert str(div.match(code)) == "[Result(0, 27, {':head': [(1, 5), (7, 11)], ':tail': [(13, 19), (20, 26)]})]"
 
     div = div_head @ r(div_head | div_tail | dot, '+') @ div_tail @ sentinel
-    assert str(div.match(code)) == "[Result(1, 26, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]"
+    assert str(div.match(code)) == "[Result(1, 26, {':head': [(1, 5), (7, 11)], ':tail': [(13, 19), (20, 26)]})]"
+
+
+def t_recursive():
+    rw = RecursionWrapper()
+    block = (r('{') @ r(rw, '*') @ r('}')).clone(name=':block')
+    rw.val = block
+    assert str(block.match('{{{{{}{}}}')) == "[Result(2, 10, {':block': [(4, 6), (6, 8), (3, 9), (2, 10)]})]"
 
 
 for func in (
@@ -219,6 +226,7 @@ for func in (
         t_exception,
         t_name,
         t_div,
+        t_recursive,
 ):
     func()
 print('all pass')
