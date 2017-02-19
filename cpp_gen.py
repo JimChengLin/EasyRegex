@@ -57,7 +57,7 @@ matcher = (
     @ left_p_mark @ maybe_chars_except_pair @ right_p_mark @ maybe_spaces  # (int j)
     @ left_b_mark @ maybe_spaces  # {
     @ func_body
-    @ right_b_mark
+    @ right_b_mark  # }
     @ sentinel
 )
 
