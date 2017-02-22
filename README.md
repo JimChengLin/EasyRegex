@@ -101,8 +101,6 @@ m.match('bbcdcd')
 m = r('a', name=':a') @ r('b',
     lambda capture: len(capture.get(':a',())) + 1)
 # 含义: 匹配1个'a'并存入捕获组, 接下来'b'的个数是名为':a'的捕获组的长度加一
-
-# 更多更详细的例子, 参见 git 中的 test.py 文件
 ```
 
 # 进阶用法

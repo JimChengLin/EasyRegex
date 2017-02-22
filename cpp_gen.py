@@ -65,8 +65,8 @@ comment_0 = may_spaces @ (r('//') @ (~r('\n')).clone('*') @ r('\n')).clone(name=
 comment_1 = may_spaces @ (r('/*') @ any_char.clone('*', mode=Mode.lazy) @ r('*/')).clone(name=':comment')
 comment = comment_0 | comment_1
 
-code_areas = char_except_pair | left_p | right_p | left_b | right_b
-func_body = (string | comment | code_areas).clone('*', mode=Mode.lazy)
+code = char_except_pair | left_p | right_p | left_b | right_b
+func_body = (string | comment | code).clone('*', mode=Mode.lazy)
 # ---
 
 matcher = (
