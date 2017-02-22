@@ -72,6 +72,10 @@ def explain_n(result: 'Result', num_t: tuple):
     return from_num, to_num
 
 
+class BranchStop(Exception):
+    pass
+
+
 def make_gen(target):
     '''
     返回一个 generator 来抽象状态机
@@ -98,7 +102,11 @@ def make_gen(target):
             recv_char = yield 'GO'
             curr_result.ed += 1
 
-            if target(recv_char):
+            res = target(recv_char)
+            if isinstance(res, BranchStop):
+                res.args = (curr_result.op, curr_result.ed)
+                raise res
+            elif res:
                 yield curr_result.as_success()
             else:
                 yield curr_result.as_fail()

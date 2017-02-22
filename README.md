@@ -9,7 +9,7 @@ MIT协议发布
 依赖: Python 3.5+
 
 ```Python
-from R import r, Mode, RecursionWrapper
+from R import r, Mode, RecursionWrapper, BranchStop
 
 # 匹配'abc'
 m = r('abc')
@@ -139,4 +139,16 @@ rw.val = block
 
 block.match('{{{{{}{}}}')
 # >> [Result(2, 10, {':block': [(4, 6), (6, 8), (3, 9), (2, 10)]})]
+```
+
+匹配终止
+
+```Python
+# 当匹配 a 之后的 b 失败时, 抛出 BranchStop 异常
+path = r('a') @ (r('b') | r(lambda char: BranchStop()))
+try:
+    path.match('ag')
+except BranchStop as bs:
+    # args 为匹配进行至的区间
+    assert bs.args == (0, 2)
 ```

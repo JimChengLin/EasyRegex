@@ -1,4 +1,4 @@
-from R import r, Mode, RecursionWrapper
+from R import r, Mode, RecursionWrapper, BranchStop
 
 # 通配符
 dot = r(lambda char: True)
@@ -215,6 +215,14 @@ def t_recursive():
     assert str(block.match('{{{{{}{}}}')) == "[Result(2, 10, {':block': [(4, 6), (6, 8), (3, 9), (2, 10)]})]"
 
 
+def t_branch_stop():
+    path = r('a') @ (r('b') | r(lambda char: BranchStop()))
+    try:
+        path.match('ag')
+    except BranchStop as bs:
+        assert bs.args == (0, 2)
+
+
 for func in (
         t_str,
         t_simple,
@@ -227,6 +235,7 @@ for func in (
         t_name,
         t_div,
         t_recursive,
+        t_branch_stop,
 ):
     func()
 print('all pass')
