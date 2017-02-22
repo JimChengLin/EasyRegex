@@ -33,8 +33,6 @@ m = r('b', (1, 2)) @ r('cd') # 二者等价
 m.match('bbcda')
 # >> [Result(0, 4, {})]
 
-from R import Mode
-
 # 懒惰模式(默认贪婪模式)
 m = r('ab') @ r('c', '*', Mode.lazy)
 m = r('ab') @ r('c', (0, inf), Mode.lazy) # 二者等价
@@ -141,7 +139,7 @@ block.match('{{{{{}{}}}')
 # >> [Result(2, 10, {':block': [(4, 6), (6, 8), (3, 9), (2, 10)]})]
 ```
 
-匹配终止
+匹配终止异常
 
 ```Python
 # 当匹配 a 之后的 b 失败时, 抛出 BranchStop 异常
@@ -149,6 +147,6 @@ path = r('a') @ (r('b') | r(lambda char: BranchStop()))
 try:
     path.match('ag')
 except BranchStop as bs:
-    # args 为匹配进行至的区间
+    # args 为匹配终止时的区间
     assert bs.args == (0, 2)
 ```
