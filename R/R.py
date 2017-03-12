@@ -9,6 +9,11 @@ from .cache import cache_deco, cache_clear
 from .util import parse_n, make_gen, str_n, explain_n
 
 
+class RecursionWrapper:
+    def __init__(self):
+        self.val = None
+
+
 class Mode(Enum):
     '''
     贪心匹配 Mode.greedy
@@ -25,7 +30,7 @@ class R:
 
     # --- basic ---
     def __init__(self, target, num=None, name: str = None, mode=Mode.greedy):
-        self.target = target
+        self._target = target
         self.num_t = parse_n(num)
         self.name = name
         self.mode = mode
@@ -38,7 +43,18 @@ class R:
         self.next_r = None
 
         # 状态机
-        self.gen = make_gen(target) if not isinstance(target, R) else None
+        self.gen = make_gen(self.target) if not isinstance(self.target, (R, RecursionWrapper)) else None
+
+    @property
+    def target(self):
+        if isinstance(self._target, RecursionWrapper):
+            return self._target.val if self._target.val is not None else self._target
+        else:
+            return self._target
+
+    @target.setter
+    def target(self, val):
+        self._target = val
 
     def __and__(self, other: 'R'):
         this = self.clone()
@@ -69,6 +85,8 @@ class R:
     def __repr__(self):
         if self.gen and isinstance(self.target, Callable):
             s = '%{}%'.format(self.target.__name__)
+        elif isinstance(self._target, RecursionWrapper):
+            return '<RW>'
         else:
             s = str(self.target)
         num_str = str_n(self.num_t)
@@ -110,14 +128,17 @@ class R:
         # 约定: from_num 和 to_num 在匹配开始时就已经确定
         from_num, to_num = explain_n(prev_result, self.num_t)
 
+        prev_ed = prev_result.ed
+
         def capture_add(echo: Result):
             '''
             在 capture 添加 echo, 用于捕获组
             '''
+            nonlocal prev_ed
             if self.name and echo:
                 group = echo.capture.get(self.name, ())
-                prev_ed = group[-1][-1] if group else prev_result.ed
                 echo.capture = {**echo.capture, self.name: [*group, (prev_ed, echo.ed)]}
+                prev_ed = echo.ed
             return echo
 
         if self.gen:
@@ -157,7 +178,6 @@ class R:
         else:
             def stream4num():
                 if to_num == 0:
-                    # gen 不是 func, 不能 return (prev_result,)
                     yield prev_result
                     return
                 if self.mode is Mode.lazy and from_num == 0:
@@ -165,11 +185,10 @@ class R:
 
                 # DFS
                 counter = 1
-                curr_iter = (capture_add(echo) for echo in self.target.imatch(resource, prev_result))
+                curr_iter = self.target.imatch(resource, prev_result)
                 while counter < from_num:
                     counter += 1
-                    curr_iter = (capture_add(echo) for echo in
-                                 chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i))
+                    curr_iter = chain.from_iterable(self.target.imatch(resource, i) for i in curr_iter if i)
 
                 q = deque()
                 q.append((curr_iter, counter))
@@ -228,7 +247,7 @@ class R:
                     echo.as_fail()
 
                     for xor_echo in self.xor_r.imatch(resource[prev_result.ed:echo.ed], Result(0, 0)):
-                        if bool(xor_echo) is demand_bool:
+                        if bool(xor_echo) is demand_bool and xor_echo.ed == echo.ed - prev_result.ed:
                             yield echo.as_success()
                             break
                     else:

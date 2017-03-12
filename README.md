@@ -3,13 +3,13 @@
 
 MIT协议发布
 
-## 使用方法
+# 使用方法
 拷贝 R 文件夹到程序的 root
 
 依赖: Python 3.5+
 
 ```Python
-from R import r
+from R import r, Mode, RecursionWrapper, BranchStop
 
 # 匹配'abc'
 m = r('abc')
@@ -32,8 +32,6 @@ m = r('b', '{1,2}') @ r('cd')
 m = r('b', (1, 2)) @ r('cd') # 二者等价
 m.match('bbcda')
 # >> [Result(0, 4, {})]
-
-from R import Mode
 
 # 懒惰模式(默认贪婪模式)
 m = r('ab') @ r('c', '*', Mode.lazy)
@@ -101,11 +99,9 @@ m.match('bbcdcd')
 m = r('a', name=':a') @ r('b',
     lambda capture: len(capture.get(':a',())) + 1)
 # 含义: 匹配1个'a'并存入捕获组, 接下来'b'的个数是名为':a'的捕获组的长度加一
-
-# 更多更详细的例子, 参见 git 中的 test.py 文件
 ```
 
-## 进阶用法
+# 进阶用法
 以匹配嵌套DIV标签为例
 
 ```Python
@@ -125,6 +121,32 @@ sentinel = r('\0', stop_head_tail_equal)
 div = div_head @ r(div_head | div_tail | no_head_tail, '+') @ div_tail @ sentinel
 # 含义: 不断匹配 DIV 头标签和尾标签, 直到二者数量相同
 m.match('0<div>1<div>2</div>3</div>4')
-# >> [Result(1, 26, {':head': [(1, 5), (5, 11)], ':tail': [(13, 19), (19, 26)]})]
+# >> [Result(1, 26, {':head': [(1, 5), (7, 11)], ':tail': [(13, 19), (20, 26)]})]
 # '0<div>1<div>2</div>3</div>4'[1:26] == '<div>1<div>2</div>3</div>'
+```
+
+# 终极用法
+生成 AST 的编译器前端
+
+```Python
+# 由于需要递归展开, rw 作为一个懒惰传值的容器
+rw = RecursionWrapper()
+block = (r('{') @ r(rw, '*') @ r('}')).clone(name=':block')
+rw.val = block
+# 意为 block = '{' + block + '}'
+
+block.match('{{{{{}{}}}')
+# >> [Result(2, 10, {':block': [(4, 6), (6, 8), (3, 9), (2, 10)]})]
+```
+
+匹配终止异常
+
+```Python
+# 当匹配 a 之后的 b 失败时, 抛出 BranchStop 异常
+path = r('a') @ (r('b') | r(lambda char: BranchStop()))
+try:
+    path.match('ag')
+except BranchStop as bs:
+    # args 为匹配终止时的区间
+    assert bs.args == (0, 2)
 ```
