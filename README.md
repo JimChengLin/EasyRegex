@@ -148,5 +148,5 @@ try:
     path.match('ag')
 except BranchStop as bs:
     # args 为匹配终止时的区间
-    assert bs.args == (0, 2)
+    # bs.args == (0, 2)
 ```
