@@ -158,7 +158,7 @@ def t_exception():
     异常是否正常触发
     '''
     counter = 0
-    for func in (lambda: r(1), lambda: r('foo', '1')):
+    for func in (lambda: r(1), lambda: r('foo', 'bar')):
         try:
             func()
         except TypeError:

@@ -44,18 +44,24 @@ def success_get_0(capture: dict):
 
 sentinel = r('\0', success_get_0)
 
+spaces = r(str.isspace, '+')
 may_spaces = r(str.isspace, '*')
+
 char = r(lambda char: True)
 char_except_pair = r(lambda char: char not in '(){}')
 may_chars_except_pair = char_except_pair.clone('*')
 
-l_p = r('(', name=':(')
-r_p = r(')', name=':)')
+l_parentheses = r('(', name=':(')
+r_parentheses = r(')', name=':)')
 l_bracket = r('{', name=':{')
 r_bracket = r('}', name=':}')
 
 func_name = r(lambda char: str.isalpha(char) or str.isdigit(char) or char == '_', '+')
-func_params = l_p @ may_chars_except_pair @ r_p
+type_name = r(func_name @ r(' *', (0, 1)), name=':type')
+var_name = r(func_name, name=':var')
+
+param = may_spaces @ type_name @ spaces @ var_name @ may_spaces @ r(',', (0, 1))
+func_params = (l_parentheses @ param.clone('*', ':declaration') @ r_parentheses).clone()
 
 # body
 string_0 = may_spaces @ (r('"') @ (r('\\"') | (~r('"'))).clone('*') @ r('"')).clone(name=':string')
@@ -66,14 +72,12 @@ comment_0 = may_spaces @ (r('//') @ (~r('\n')).clone('*') @ r('\n')).clone(name=
 comment_1 = may_spaces @ (r('/*') @ char.clone('*', mode=Mode.lazy) @ r('*/')).clone(name=':comment')
 comment = comment_0 | comment_1
 
-# code
-declaration = None
-code = char_except_pair | l_p | r_p | l_bracket | r_bracket
+declaration = (type_name @ spaces @ var_name @ may_spaces @ (r(';') | r('='))).clone(name=':declaration')
+code = char_except_pair | l_parentheses | r_parentheses | l_bracket | r_bracket
 
-func_body = (string | comment | code).clone('*', mode=Mode.lazy)
-# _body
+func_body = (string | comment | declaration | code).clone('*', mode=Mode.lazy)
+# ~body
 
-# assemble
 matcher = (
     r('$gen ') @ may_spaces
     @ func_name @ may_spaces  # range_0_j
